@@ -20,7 +20,7 @@ beh_measures = {'age', 'lit', 'vm', 'fm'}; %NOTE: this only uses age right now.
 %% Tractography
 
 % Read in data (from LWX_devOfVerticalWM_v3_loadData.m).
-load([rootDir 'supportFiles/LWX_data_' wm_measure '_age_tractz_test25920.mat'])
+load([rootDir 'supportFiles/LWX_data_' wm_measure '_age_tractz.mat'])
 clearvars -except wm_z wm_childrenOnly wm_childrenOnly_z list_tract wm_measure rootDir covariates sub sub_childrenOnly beh_measure beh_measures
 y_min = -1.5; y_max = 1.5;
 

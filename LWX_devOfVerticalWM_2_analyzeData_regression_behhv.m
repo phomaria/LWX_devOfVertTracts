@@ -20,7 +20,7 @@ beh_measures = {'age', 'lit', 'vm', 'fm'}; %NOTE: this only uses age right now.
 %% Tractography
 
 % Read in data (from LWX_devOfVerticalWM_v3_loadData.m).
-load([rootDir 'supportFiles/LWX_data_' wm_measure '_age_tractz_test25920.mat'])
+load([rootDir 'supportFiles/LWX_data_' wm_measure '_age_tractz.mat'])
 clearvars -except wm_z wm_childrenOnly wm_childrenOnly_z list_tract wm_measure rootDir covariates sub sub_childrenOnly beh_measure beh_measures
 
 % Get index matrices for hypothesis-driven grouping of WM tracts. LH only right now.
@@ -121,7 +121,7 @@ disp(['Model: F = ' num2str(f3) ', p = ' num2str(p3)])
 disp(mdl.Coefficients)
 
 % Posthoc comparison for v > h.
-[pVal, F, df1, df2] = coefTest(mdl, [0 -1 1 1 1 -1 -1 -1 -1]);
+[pVal, F, df1, df2] = coefTest(mdl, [0 -1 -1 -1 -1 1 1 1 1]);
 disp(['Planned comparison All Vertical Tracts > All Horizontal Tracts for All Behavioral Measures: F(' ...
     num2str(df1) ', ' num2str(df2) ') = ' num2str(F) ', p = ' num2str(pVal) '.'])
 

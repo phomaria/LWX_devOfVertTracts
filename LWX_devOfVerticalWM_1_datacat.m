@@ -89,7 +89,7 @@ for w = 1%:length(w_measures)
         grp_contents = grp_contents(arrayfun(@(x) x.name(1), grp_contents) == 's');
         
         % Load in each tract's tractography measures for this subject.
-        sub_count = 0;
+        sub_count = 0; tract = {};
         for i = 1:size(grp_contents, 1)
             
             %     % Only read in data for subjects that we want to consider in this
@@ -158,7 +158,8 @@ for w = 1%:length(w_measures)
                     end
                     
                     % Grab tract name for grouping variable.
-                    tract{sub_count, j} = sub_contents_tractprofiles(j).name(1:end-13);
+                
+                    tract{sub_count, j} = sub_contents_tractprofiles(j).name(1:end-13)
                     
                     % Grab subID.
                     sub(sub_count) = str2num(grp_contents(i).name(end-2:end));
@@ -216,7 +217,7 @@ for w = 1%:length(w_measures)
     end
     
     % Set the mean of any tracts with less than 100 streamlines to NaN so that they will not be included in the average.
-    m(n_streamlines <= 100) = NaN;
+%     m(n_streamlines <= 100) = NaN;
     
     % Get a list of unique tract names.
     list_tract = unique(tract);
@@ -296,7 +297,7 @@ for w = 1%:length(w_measures)
     group_childrenOnly = group(group~=3);
     
     % Save all variables.
-    save([rootDir 'supportFiles/LWX_data_' wm_measure '_' beh_measure '_tractz_' prefix '.mat'])
+    save([rootDir 'supportFiles/LWX_data_' wm_measure '_' beh_measure '_tractz.mat'])
     
     % Reset for next loop.
     clearvars -except w b rootDir header fcount blprojectid b_measures w_measures list_wm_toi test_type pval p_bonf remove_outliers save_figures data_lwx

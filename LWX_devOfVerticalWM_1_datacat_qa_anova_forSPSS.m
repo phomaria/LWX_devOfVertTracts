@@ -42,7 +42,7 @@ sub = [103, 105, 108, 109, 115, 119, 121, 123, 125, 126, 127, 204, 213, 215, 216
 for w = 1:length(wm_measure_here)
     
     % Read in data (from LWX_devOfVerticalWM_v3_loadData.m).
-    load([rootDir 'supportFiles/LWX_data_' wm_measure_here{w} '_' beh_measure '_tractz_test32104.mat'])
+    load([rootDir 'supportFiles/LWX_data_' wm_measure_here{w} '_' beh_measure '_tractz.mat'])
     
     % Tidy-up working directory.
     clearvars -except w rootDir beh_measure wm_measure_here list_tract sub cov_age group wm beh z_beh
@@ -140,7 +140,7 @@ for w = 1:length(wm_measure_here)
         {'subID', 'Age_group', 'Age_mo', list_tract{:}, 'meanH', 'meanV'});
     
     % Write.
-    writetable(t_out, [rootDir 'LWX_devOfVerticalWM_forSPSS_' wm_measure_here{w} '_test32104.csv']);
+    writetable(t_out, [rootDir 'LWX_devOfVerticalWM_forSPSS_' wm_measure_here{w} '.csv']);
     
     % Output z-scored file for SPSS.
     toi_z = (nanmean(toi, 1) - toi)./nanstd(toi, [], 1);
@@ -152,7 +152,7 @@ for w = 1:length(wm_measure_here)
     
     t_out_z = array2table(cat(2, sub, group, cov_age, toi_z(:, 1:end), toi_meanh_z, toi_meanv_z), 'VariableNames', ...
         {'subID', 'Age_group', 'Age_mo', list_tract{:}, 'meanH', 'meanV'});
-    writetable(t_out_z, [rootDir 'LWX_devOfVerticalWM_forSPSS_' wm_measure_here{w} '_test32104_z.csv']);
+    writetable(t_out_z, [rootDir 'LWX_devOfVerticalWM_forSPSS_' wm_measure_here{w} '_z.csv']);
     
 end
 

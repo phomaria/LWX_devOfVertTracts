@@ -53,7 +53,7 @@ for w = 1%:length(w_measures)
             measure_in = 'age_mo';
             gp_in = 'gp_age';
             
-            outlier = [128 318];
+            outlier = [108 128 318];
             %128 because WM measure z-scores are consistenly above z = +/-4.5 for all tracts
             % 318 because SNR is extremely low (snr = 3.925 with a z=-3.14)relative to others (range in snr = [7.4, 17.5]).
             
@@ -62,21 +62,21 @@ for w = 1%:length(w_measures)
             measure_in = 'c_lit';
             gp_in = 'gp_lit';
             
-            outlier = [128 318];
+            outlier = [108 128 318];
             
         elseif strcmp(beh_measure, 'vm')
             
             measure_in = 'c_vm';
             gp_in = 'gp_vm';
             
-            outlier = [128 318];
+            outlier = [108 128 318];
             
         elseif strcmp(beh_measure, 'fm')
             
             measure_in = 'c_fm';
             gp_in = 'gp_fm';
             
-            outlier = [128 318];
+            outlier = [108 128 318];
             
         end
         
@@ -462,8 +462,8 @@ for w = 1%:length(w_measures)
                         ylim([-3, 3]); xlim([50, 110]);
                     end
                     
-                    print([rootDir 'plots/plot_scatter_' beh_measure '_' wm_measure '_' list_tract{test} '_groupz'], '-dpng')
-                    print([rootDir 'plots/eps/plot_scatter_' beh_measure '_' wm_measure '_' list_tract{test} '_groupz'], '-depsc')
+                    print([rootDir 'plots/plot_scatter_' beh_measure '_' wm_measure '_' list_tract{test} '_tractz'], '-dpng')
+                    print([rootDir 'plots/eps/plot_scatter_' beh_measure '_' wm_measure '_' list_tract{test} '_tractz'], '-depsc')
                     
                 elseif strcmp(save_figures, 'yes')
                     
@@ -505,8 +505,8 @@ for w = 1%:length(w_measures)
                 % Save plots, if requested.
                 if strcmp(save_figures, 'yes') || strcmp(remove_outliers, 'yes')
                     
-                    print([rootDir 'plots/plot_scatter_' beh_measure '_nstreamlines_' list_tract{test} '_groupz'], '-dpng')
-                    print([rootDir 'plots/eps/plot_scatter_' beh_measure '_nstreamlines_' list_tract{test} '_groupz'], '-depsc')
+                    print([rootDir 'plots/plot_scatter_' beh_measure '_nstreamlines_' list_tract{test} '_tractz'], '-dpng')
+                    print([rootDir 'plots/eps/plot_scatter_' beh_measure '_nstreamlines_' list_tract{test} '_tractz'], '-depsc')
                     
                 elseif strcmp(save_figures, 'yes')
                     
@@ -522,7 +522,7 @@ for w = 1%:length(w_measures)
         end % end test
         
         % Save all variables.
-        save([rootDir 'supportFiles/LWX_data_' wm_measure '_' beh_measure '_tractz_test32104.mat'])
+        save([rootDir 'supportFiles/LWX_data_' wm_measure '_' beh_measure '_tractz.mat'])
         
         % If this is the first time through, plot snr, for qa.
         if b==1 && w==1
