@@ -41,7 +41,7 @@ load([rootDir 'supportFiles/LWX_all_groupings.mat']);
 % gp_lit (early literate = 1, literate = 2),
 % gp_vm (low cm = 1, high vm = 2), and
 % gp_fm (low cm = 1, high vm = 2).
-header = {'subID', 'age_mo', 'vmi', 'vp', 'mc', 'pegs_dom', 'pegs_ndom', 'lwi', 'spell', 'wa', 'sos', 'c_vm', 'c_fm', 'c_lit', 'gp_age', 'gp_lit', 'gp_vm', 'gp_fm'};
+header = {'subID', 'sex', 'age_mo', 'vmi', 'vp', 'mc', 'pegs_dom', 'pegs_ndom', 'lwi', 'spell', 'wa', 'sos', 'c_vm', 'c_fm', 'c_lit', 'gp_age', 'gp_lit', 'gp_vm', 'gp_fm'};
 
 fcount = 0;
 for w = 1:length(w_measures)

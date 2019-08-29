@@ -32,7 +32,7 @@ load([rootDir 'supportFiles/LWX_all_groupings.mat']);
 % gp_lit (early literate = 1, literate = 2),
 % gp_vm (low cm = 1, high vm = 2), and
 % gp_fm (low cm = 1, high vm = 2).
-header = {'subID', 'age_mo', 'vmi', 'vp', 'mc', 'pegs_dom', 'pegs_ndom', 'lwi', 'spell', 'wa', 'sos', 'c_vm', 'c_fm', 'c_lit', 'gp_age', 'gp_lit', 'gp_vm', 'gp_fm'};
+header = {'subID', 'sex', 'age_mo', 'vmi', 'vp', 'mc', 'pegs_dom', 'pegs_ndom', 'lwi', 'spell', 'wa', 'sos', 'c_vm', 'c_fm', 'c_lit', 'gp_age', 'gp_lit', 'gp_vm', 'gp_fm'};
 
 fcount = 0;
 for w = 1%:length(w_measures)
@@ -245,6 +245,9 @@ for w = 1%:length(w_measures)
             % Get this subject's AGE.
             cov_age(s) = data_lwx(find(sub(s) == data_lwx(:, find(strcmp(header, 'subID')))), find(strcmp(header, 'age_mo')));
             
+            % Get this subject's SEX.
+            cov_sex(s) = data_lwx(find(sub(s) == data_lwx(:, find(strcmp(header, 'subID')))), find(strcmp(header, 'sex')));
+            
             % Get this subject's WM measurements.
             wm(s, :) = y(find(y(:, 1) == sub(s)), 3:end); % start at 3 because first column is sub and second column is 'empty' (i.e., 0)
             
@@ -259,6 +262,7 @@ for w = 1%:length(w_measures)
     n_streamlines = n_streamlines(group~=0, :);
     wm = wm(group~=0, :);
     cov_age = transpose(cov_age(group~=0));
+    cov_sex = transpose(cov_sex(group~=0));
     sub = transpose(sub(group~=0));
     snr = transpose(snr(group~=0));
     group = transpose(group(group~=0));
@@ -267,6 +271,7 @@ for w = 1%:length(w_measures)
     measure(measure == 0) = NaN; 
     wm(wm == 0) = NaN; 
     cov_age(cov_age == 0) = NaN; 
+    cov_sex(cov_sex == 0) = NaN;
     sub(sub == 0) = NaN; 
     n_streamlines(n_streamlines == 0) = NaN; 
     snr(snr == 0) = NaN; 
@@ -281,6 +286,7 @@ for w = 1%:length(w_measures)
         n_streamlines = n_streamlines(idx_remove, :);
         measure = measure(idx_remove);
         cov_age = cov_age(idx_remove);
+        cov_sex = cov_sex(idx_remove);
         group = group(idx_remove);
         snr = snr(idx_remove);
         sub = sub(idx_remove);
@@ -292,6 +298,7 @@ for w = 1%:length(w_measures)
     n_streamlines_childrenOnly = n_streamlines(group~=3, :);
     measure_childrenOnly = measure(group~=3);
     cov_age_childrenOnly = cov_age(group~=3);
+    cov_sex_childrenOnly = cov_sex(group~=3);
     sub_childrenOnly = sub(group~=3);
     snr_childrenOnly = snr(group~=3);
     group_childrenOnly = group(group~=3);
