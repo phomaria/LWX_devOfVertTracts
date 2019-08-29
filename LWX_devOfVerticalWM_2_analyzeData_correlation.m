@@ -103,7 +103,7 @@ for t = 1:length(list_tract_ht)
         scatter(cov_age_childrenOnly, ht(:, t), 'filled', 'MarkerFaceColor', c(count, :))
         scatter(repmat(max(cov_age_childrenOnly + 4), size(ht_adult(:, t))), ht_adult(:, t), 'MarkerEdgeColor', c(count, :))
         if t == 1; hold on; end
-        [r, p, ~, slope] = plotcorr2(cov_age_childrenOnly, ht(:, t), [beh_measure ' (mo)'], ['Average ' wm_measure, ', zscored'], [], list_tract_ht{t}, c(count, :), 5);
+        [r, p, ~, slope] = plotcorr2(cov_age_childrenOnly, ht(:, t), [beh_measure ' (mo)'], ['Average ' wm_measure], [], list_tract_ht{t}, c(count, :), 5);
         ylim([y_min y_max]);
         
     elseif strcmp(control_age, 'yes')
@@ -163,7 +163,7 @@ for t = 1:length(list_tract_vt)
         scatter(cov_age_childrenOnly, vt(:, t), 'filled', 'MarkerFaceColor', c(count, :))
         scatter(repmat(max(cov_age_childrenOnly + 4), size(vt_adult(:, t))), vt_adult(:, t), 'MarkerEdgeColor', c(count, :))
         if t == 1; hold on; end
-        [r, p, ~, slope] = plotcorr2(cov_age_childrenOnly, vt(:, t), [beh_measure ' (mo)'], ['Average ' wm_measure, ', zscored'], [], list_tract_vt{t}, c(count, :), 5);
+        [r, p, ~, slope] = plotcorr2(cov_age_childrenOnly, vt(:, t), [beh_measure ' (mo)'], ['Average ' wm_measure], [], list_tract_vt{t}, c(count, :), 5);
         ylim([y_min y_max]);
         
     elseif strcmp(control_age, 'yes')
@@ -223,7 +223,7 @@ for t = 1:length(list_tract_ht)
         % Plot only data points that would have been included in the corelation.
         scatter(cov_age_childrenOnly, ht(:, t), 'filled', 'MarkerFaceColor', c(count, :))
         scatter(repmat(max(cov_age_childrenOnly + 4), size(ht_adult(:, t))), ht_adult(:, t), 'MarkerEdgeColor', c(count, :))
-        [r, p, statstr] = plotcorr2(cov_age_childrenOnly, ht(:, t), [beh_measure ' (mo)'], ['Average ' wm_measure, ', zscored'], [], list_tract_ht{t}, c(count, :), 5);
+        [r, p, statstr] = plotcorr2(cov_age_childrenOnly, ht(:, t), [beh_measure ' (mo)'], ['Average ' wm_measure], [], list_tract_ht{t}, c(count, :), 5);
         ylim([y_min y_max]);
         
     elseif strcmp(control_age, 'yes')
@@ -261,7 +261,7 @@ for t = 1:length(list_tract_vt)
         % Plot only data points that would have been included in the corelation.
         scatter(cov_age_childrenOnly, vt(:, t), 'filled', 'MarkerFaceColor', c(count, :))
         scatter(repmat(max(cov_age_childrenOnly + 4), size(vt_adult(:, t))), vt_adult(:, t), 'MarkerEdgeColor', c(count, :))
-        [r, p, statstr] = plotcorr2(cov_age_childrenOnly, vt(:, t), [beh_measure ' (mo)'], ['Average ' wm_measure, ', zscored'], [], list_tract_vt{t}, c(count, :), 5);
+        [r, p, statstr] = plotcorr2(cov_age_childrenOnly, vt(:, t), [beh_measure ' (mo)'], ['Average ' wm_measure], [], list_tract_vt{t}, c(count, :), 5);
         ylim([y_min y_max]);
         
     elseif strcmp(control_age, 'yes')
@@ -296,7 +296,7 @@ if strcmp(beh_measure, 'age')
     scatter(repmat(cov_age_childrenOnly, [size(ht, 2) 1]), ht(:), 'filled', 'MarkerFaceColor', c(count, :))
     hold on;
     scatter(repmat(max(cov_age_childrenOnly + 4), size(ht_adult(:))), ht_adult(:), 'MarkerEdgeColor', c(count, :))
-    [r, p, ~, slope] = plotcorr2(repmat(cov_age_childrenOnly, [size(ht, 2) 1]), ht(:), [beh_measure ' (mo)'], ['Average ' wm_measure, ', zscored'], [], 'Horizontal', c(count, :), 5);
+    [r, p, ~, slope] = plotcorr2(repmat(cov_age_childrenOnly, [size(ht, 2) 1]), ht(:), [beh_measure ' (mo)'], ['Average ' wm_measure], [], 'Horizontal', c(count, :), 5);
     title(['Horizontal Tracts, slope = ' num2str(slope) ', r = ' num2str(r) ', p = ' num2str(p)]);
     hold off;
     
@@ -305,7 +305,7 @@ if strcmp(beh_measure, 'age')
     scatter(repmat(cov_age_childrenOnly, [size(vt, 2) 1]), vt(:), 'filled', 'MarkerFaceColor', c(count+30, :))
     hold on;
     scatter(repmat(max(cov_age_childrenOnly + 4), size(vt_adult(:))), vt_adult(:), 'MarkerEdgeColor', c(count+30, :))
-    [r, p, ~, slope] = plotcorr2(repmat(cov_age_childrenOnly, [size(vt, 2) 1]), vt(:), [beh_measure ' (mo)'], ['Average ' wm_measure, ', zscored'], [], 'Vertical', c(count+30, :), 5);
+    [r, p, ~, slope] = plotcorr2(repmat(cov_age_childrenOnly, [size(vt, 2) 1]), vt(:), [beh_measure ' (mo)'], ['Average ' wm_measure], [], 'Vertical', c(count+30, :), 5);
     ylim([y_min y_max]);
     title(['Vertical Tracts, slope = ' num2str(slope) ', r = ' num2str(r) ', p = ' num2str(p)]);
     hold off;

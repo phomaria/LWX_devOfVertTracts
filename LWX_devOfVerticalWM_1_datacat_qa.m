@@ -37,6 +37,11 @@ load([rootDir 'supportFiles/LWX_all_groupings.mat']);
 % gp_fm (low cm = 1, high vm = 2).
 header = {'subID', 'age_mo', 'vmi', 'vp', 'mc', 'pegs_dom', 'pegs_ndom', 'lwi', 'spell', 'wa', 'sos', 'c_vm', 'c_fm', 'c_lit', 'gp_age', 'gp_lit', 'gp_vm', 'gp_fm'};
 
+outlier = [108 128 318];
+% 108 because SNR is extremely low relative to others
+% 128 because WM measure z-scores are consistenly above z = +/-4.5 for all tracts
+% 318 because SNR is extremely low (snr = 3.925 with a z=-3.14) relative to others (range in snr = [7.4, 17.5]).
+            
 fcount = 0;
 for w = 1%:length(w_measures)
        
@@ -53,37 +58,27 @@ for w = 1%:length(w_measures)
             measure_in = 'age_mo';
             gp_in = 'gp_age';
             
-            outlier = [108 128 318];
-            %128 because WM measure z-scores are consistenly above z = +/-4.5 for all tracts
-            % 318 because SNR is extremely low (snr = 3.925 with a z=-3.14)relative to others (range in snr = [7.4, 17.5]).
-            
         elseif strcmp(beh_measure, 'lit')
             
             measure_in = 'c_lit';
             gp_in = 'gp_lit';
-            
-            outlier = [108 128 318];
-            
+                        
         elseif strcmp(beh_measure, 'vm')
             
             measure_in = 'c_vm';
             gp_in = 'gp_vm';
-            
-            outlier = [108 128 318];
-            
+                        
         elseif strcmp(beh_measure, 'fm')
             
             measure_in = 'c_fm';
             gp_in = 'gp_fm';
-            
-            outlier = [108 128 318];
-            
+                        
         end
         
         %% TRACTOGRAPHY.
         
         % Get contents of the directory where the tract measures for this subject are stored.
-        grp_contents = dir([rootDir filesep blprojectid filesep]);
+        grp_contents = dir(fullfile(rootDir, blprojectid));
         
         % Remove the '.' and '..' files.
         grp_contents = grp_contents(arrayfun(@(x) x.name(1), grp_contents) ~= '.');
@@ -95,8 +90,8 @@ for w = 1%:length(w_measures)
         sub_count = 0;
         for i = 1:size(grp_contents, 1)
             
-            %     % Only read in data for subjects that we want to consider in this
-            %     analysis. Right now we don't have all behavioral data entered.
+            % Only read in data for subjects that we want to consider in this
+            % analysis. Not all subjects have all behavioral data.
             if sum(ismember(data_lwx(:, 1), grp_contents(i).name)) ~= 0
                 
                 % Display current sub ID.
@@ -105,25 +100,28 @@ for w = 1%:length(w_measures)
                 % Update subject counter for when not all subjects are used/needed.
                 sub_count = sub_count + 1;
                 
-                % Get contents of the directory where the tract measures for this subject are stored.
-                sub_contents_tractprofiles = dir([grp_contents(i).folder filesep grp_contents(i).name '/dt-neuro-tractprofile*/profiles/*.csv']);
-                sub_contents_tractstats = dir([grp_contents(i).folder filesep grp_contents(i).name '/dt-neuro-tractmeasures*/*.csv']);
-                
-                % Get contents of the directory where the SNR values for this subject are stored.
-                sub_contents_snr = dir([grp_contents(i).folder filesep grp_contents(i).name '/dt-raw.tag-snr*/*product.json']);
-                
+                % Get contents of the directory where the tract profiles for this subject are stored.
+                sub_contents_tractprofiles = dir(fullfile(grp_contents(i).folder, grp_contents(i).name, '/dt-neuro-tractprofile*/profiles/*.csv'));
                 % Remove the '.' and '..' files.
                 sub_contents_tractprofiles = sub_contents_tractprofiles(arrayfun(@(x) x.name(1), sub_contents_tractprofiles) ~= '.');
+                
+                % Get contents of the directory where the tract measures for this subject are stored.
+                sub_contents_tractstats = dir(fullfile(grp_contents(i).folder, grp_contents(i).name, '/dt-neuro-tractmeasures*/*.csv'));
+                % Remove the '.' and '..' files.
                 sub_contents_tractstats = sub_contents_tractstats(arrayfun(@(x) x.name(1), sub_contents_tractstats) ~= '.');
+
+                % Get contents of the directory where the SNR values for this subject are stored.
+                sub_contents_snr = dir(fullfile(grp_contents(i).folder, grp_contents(i).name, '/dt-raw.tag-snr*/*product.json'));   
+                % Remove the '.' and '..' files.
                 sub_contents_snr = sub_contents_snr(arrayfun(@(x) x.name(1), sub_contents_snr) ~= '.');
                 
                 % Read in stats for this subject's tracts.
-                data_stats_temp = readtable([sub_contents_tractstats.folder filesep sub_contents_tractstats.name]);
+                data_stats_temp = readtable(fullfile(sub_contents_tractstats.folder, sub_contents_tractstats.name));
                 
                 for j = 1:size(sub_contents_tractprofiles)
                     
                     % Read in data for this subject and this tract.
-                    data_temp = csvread([sub_contents_tractprofiles(j).folder filesep sub_contents_tractprofiles(j).name], 1, 0);
+                    data_temp = csvread(fullfile(sub_contents_tractprofiles(j).folder, sub_contents_tractprofiles(j).name), 1, 0);
                     
                     % Get middle 80%.
                     start = size(data_temp, 1)*.1;
