@@ -15,55 +15,40 @@ rootDir = '/N/dc2/projects/lifebid/development/LWX_developmentOfVerticalWM/';
 
 beh_measure = 'age'; %age, lit, vm, fm
 wm_measure_here = {'fa', 'ad', 'md', 'rd', 'od', 'icvf', 'isovf'}; %fa, ad, md, rd, od, icvf, isovf
-sub = [103, 105, 108, 109, 115, 119, 121, 123, 125, 126, 127, 204, 213, 215, 216, ...
-   219, 220, 221, 222, 226, 301, 302, 303, 304, 306, 314, 315, 316, 319];
-
-% %% BEHAVIORAL MEASURES
-% 
-% % Read in behavioral data.
-% load([rootDir 'supportFiles/LWX_all_groupings.mat']);
-% 
-% % Header for LWX Behavioral Data.
-% header = {'subID', 'age_mo', 'vmi', 'vp', 'mc', 'pegs_dom', 'pegs_ndom', 'lwi', 'spell', 'wa', 'sos', 'c_vm', 'c_fm', 'c_lit', 'gp_age', 'gp_lit', 'gp_vm', 'gp_fm'};
-% 
-% % Select only those subjects for whom we have both behavioral and tractography data.
-% subID_list = data_lwx(find(ismember(sub, data_lwx(:, strcmp(header, 'subID')))), find(strcmp(header, 'subID')));
-% 
-% % Subselect only data for children and for the covariates of interest. Remove unnecessary columns.
-% beh = cat(2, data_lwx(find(ismember(sub, data_lwx(:, strcmp(header, 'subID')))), find(strcmp(header, 'age_mo'))), ...
-%     data_lwx(find(ismember(sub, data_lwx(:, strcmp(header, 'subID')))), find(strcmp(header, 'c_lit'))), ...
-%     data_lwx(find(ismember(sub, data_lwx(:, strcmp(header, 'subID')))), find(strcmp(header, 'c_vm'))), ...
-%     data_lwx(find(ismember(sub, data_lwx(:, strcmp(header, 'subID')))), find(strcmp(header, 'c_fm'))));
-% 
-% % Get measure-specific z-scores (even for age).
-% z_beh = (beh - nanmean(beh))./nanstd(beh);
 
 %% WHITE MATTER MEASURES
 for w = 1:length(wm_measure_here)
     
     % Read in data (from LWX_devOfVerticalWM_v3_loadData.m).
-    load([rootDir 'supportFiles/LWX_data_' wm_measure_here{w} '_' beh_measure '_tractz.mat'])
+    load([rootDir 'supportFiles/LWX_data_' wm_measure_here{w} '_' beh_measure '_raw.mat'])
     
-    % Tidy-up working directory.
-    clearvars -except w rootDir beh_measure wm_measure_here list_tract sub cov_age group wm beh z_beh
+    % Convert into array and header for ease.
+    data_all_in = table2array(data_tbl);
+    data_all_in_header = data_tbl.Properties.VariableNames;
     
-    % Get index matrices for hypothesis-driven grouping of WM tracts. LH only right now.
-    for k = 1:size(list_tract, 1)
+    if strcmp(beh_measure, 'age')
+        
+        group = data_tbl.group_age;
+        
+    end
+    
+    % Get index matrices for hypothesis-driven grouping of WM tracts. 
+    for k = 1:length(data_all_in_header)
         
         % Indices of horizontal tracts.
-        h_idx(k) = strcmp(list_tract{k}, 'leftSLF1And2') || strcmp(list_tract{k}, 'rightSLF1And2') ...
-            || strcmp(list_tract{k}, 'leftIFOF') || strcmp(list_tract{k}, 'rightIFOF') ...
-            || strcmp(list_tract{k}, 'leftILF') || strcmp(list_tract{k}, 'rightILF') ...
-            || strcmp(list_tract{k}, 'leftArc') || strcmp(list_tract{k}, 'rightArc') ...
-            || strcmp(list_tract{k}, 'leftSLF3') || strcmp(list_tract{k}, 'rightSLF3');
+        h_idx(k) = strcmp(data_all_in_header{k}, 'leftSLF1And2') || strcmp(data_all_in_header{k}, 'rightSLF1And2') ...
+            || strcmp(data_all_in_header{k}, 'leftIFOF') || strcmp(data_all_in_header{k}, 'rightIFOF') ...
+            || strcmp(data_all_in_header{k}, 'leftILF') || strcmp(data_all_in_header{k}, 'rightILF') ...
+            || strcmp(data_all_in_header{k}, 'leftArc') || strcmp(data_all_in_header{k}, 'rightArc') ...
+            || strcmp(data_all_in_header{k}, 'leftSLF3') || strcmp(data_all_in_header{k}, 'rightSLF3');
         
         % Indices of vertical tracts.
-        v_idx(k) = strcmp(list_tract{k}, 'leftAslant') || strcmp(list_tract{k}, 'rightAslant') ...
-            || strcmp(list_tract{k}, 'leftTPC') || strcmp(list_tract{k}, 'rightTPC') ...
-            || strcmp(list_tract{k}, 'leftpArc') || strcmp(list_tract{k}, 'rightpArc') ...
-            || strcmp(list_tract{k}, 'leftMDLFspl') || strcmp(list_tract{k}, 'rightMDLFspl') ...
-            || strcmp(list_tract{k}, 'leftVOF') || strcmp(list_tract{k}, 'rightVOF') ...
-            || strcmp(list_tract{k}, 'leftMDLFang') || strcmp(list_tract{k}, 'rightMDLFang');
+        v_idx(k) = strcmp(data_all_in_header{k}, 'leftAslant') || strcmp(data_all_in_header{k}, 'rightAslant') ...
+            || strcmp(data_all_in_header{k}, 'leftTPC') || strcmp(data_all_in_header{k}, 'rightTPC') ...
+            || strcmp(data_all_in_header{k}, 'leftpArc') || strcmp(data_all_in_header{k}, 'rightpArc') ...
+            || strcmp(data_all_in_header{k}, 'leftMDLFspl') || strcmp(data_all_in_header{k}, 'rightMDLFspl') ...
+            || strcmp(data_all_in_header{k}, 'leftVOF') || strcmp(data_all_in_header{k}, 'rightVOF') ...
+            || strcmp(data_all_in_header{k}, 'leftMDLFang') || strcmp(data_all_in_header{k}, 'rightMDLFang');
         
         % Set the grouping variable for horizontal (=1) and vertical (=2) tracts and tracts that are not of interest (=0).
         if h_idx(k) == 1
@@ -83,10 +68,10 @@ for w = 1:length(wm_measure_here)
     end
     
     % Select the measurements of the tracts that I care about and convert all zeros to NaN.
-    toi = wm(:, find(hv ~= 0)); toi(toi==0) = NaN;
+    toi = data_all_in(:, find(hv ~= 0)); toi(toi==0) = NaN;
     
     % Update the tract list so that we can grab the tract name.
-    list_tract = list_tract(hv~=0);
+    data_all_in_header = data_all_in_header(hv~=0);
     
     % Update the tract indexing to correspond with toi dimensions.
     hv = hv(find(hv~=0));
@@ -116,8 +101,10 @@ for w = 1:length(wm_measure_here)
     r_min = cat(1, repmat(r_min_wtwg1, [size(toi(find(group==1)))]), repmat(r_min_wtwg2, size(toi(find(group==2)))), ...
         repmat(r_min_wtwg3, size(toi(find(group==3)))));
     
-    % Replace outliers with NaN.
+    % Display.
     disp([wm_measure_here{w}]);
+    
+    % Replace outliers with NaN.
     % Max
     if ~isempty(find(toi > r_max))
         toi(find(toi > r_max)) = NaN;
@@ -136,8 +123,8 @@ for w = 1:length(wm_measure_here)
     % Output csv file for ANOVA in SPSS. (Matlab doesn't handle Mixed Model
     % ANOVAs well when the between-group variable is correlated with subID
     % (e.g., when between-group variable is something like age groups).
-    t_out = array2table(cat(2, sub, group, cov_age, toi(:, 1:end), nanmean(toi(:, hv == 1), 2), nanmean(toi(:, hv == 2), 2)), 'VariableNames', ...
-        {'subID', 'Age_group', 'Age_mo', list_tract{:}, 'meanH', 'meanV'});
+    t_out = array2table(cat(2, data_tbl.subID, group, toi(:, 1:end), nanmean(toi(:, hv == 1), 2), nanmean(toi(:, hv == 2), 2)), 'VariableNames', ...
+        {'subID', 'group_age', data_all_in_header{:}, 'meanH', 'meanV'});
     
     % Write.
     writetable(t_out, [rootDir 'LWX_devOfVerticalWM_forSPSS_' wm_measure_here{w} '.csv']);
@@ -150,8 +137,8 @@ for w = 1:length(wm_measure_here)
     temp = nanmean(toi(:, hv == 2), 2);
     toi_meanv_z = (nanmean(temp, 1) - temp)./nanstd(temp, [], 1); clear temp
     
-    t_out_z = array2table(cat(2, sub, group, cov_age, toi_z(:, 1:end), toi_meanh_z, toi_meanv_z), 'VariableNames', ...
-        {'subID', 'Age_group', 'Age_mo', list_tract{:}, 'meanH', 'meanV'});
+    t_out_z = array2table(cat(2, data_tbl.subID, group, toi_z(:, 1:end), toi_meanh_z, toi_meanv_z), 'VariableNames', ...
+        {'subID', 'group_age', data_all_in_header{:}, 'meanH', 'meanV'});
     writetable(t_out_z, [rootDir 'LWX_devOfVerticalWM_forSPSS_' wm_measure_here{w} '_z.csv']);
     
 end
