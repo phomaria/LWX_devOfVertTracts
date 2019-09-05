@@ -8,13 +8,12 @@
 clear all; close all; clc
 format shortG
 
+remove_outliers = 'yes';
+
 prefix = ''; % 'streamlinecount25920-'
 blprojectid = ['/' prefix 'proj-5a74d1e26ed91402ce400cca/'];
 
-b_measures = {'age', 'lit', 'vm', 'fm'};
 w_measures = {'fa', 'ad', 'md', 'rd', 'od', 'icvf', 'isovf'};
-
-remove_outliers = 'yes';
 
 % Set working directories.
 rootDir = '/N/dc2/projects/lifebid/development/LWX_developmentOfVerticalWM/';
@@ -35,118 +34,90 @@ outlier = [128 315 318];
 
 for w = 1:length(w_measures)
     
-    for b = 1:length(b_measures)
+    wm_measure = w_measures{w};
+    
+    %% TRACTOGRAPHY.
+    
+    % Get contents of the directory where the tract measures for this subject are stored.
+    grp_contents = dir(fullfile(rootDir, blprojectid));
+    
+    % Remove the '.' and '..' files.
+    grp_contents = grp_contents(arrayfun(@(x) x.name(1), grp_contents) ~= '.');
+    
+    % Keep only names that are subject folders.
+    grp_contents = grp_contents(arrayfun(@(x) x.name(1), grp_contents) == 's');
+    
+    % Load in each tract's tractography measures for this subject.
+    for i = 1:size(grp_contents, 1)
         
-        wm_measure = w_measures{w};
-        beh_measure = b_measures{b};       
+        % Grab subID.
+        sub(i) = str2num(grp_contents(i).name(end-2:end));
         
-        %% BEHAVIOR.
-        
-        % Set names for correct columns given user input..
-        if strcmp(beh_measure, 'age')
-            
-            measure_in = 'Age_months';
-            gp_in = 'group_age';
-            
-        elseif strcmp(beh_measure, 'lit')
-            
-            measure_in = 'c_lit';
-            gp_in = 'group_lit';
-                        
-        elseif strcmp(beh_measure, 'vm')
-            
-            measure_in = 'c_vm';
-            gp_in = 'group_vm';
-                        
-        elseif strcmp(beh_measure, 'fm')
-            
-            measure_in = 'c_fm';
-            gp_in = 'group_fm';
-                        
-        end
-        
-        %% TRACTOGRAPHY.
+        % Display current sub ID.
+        disp(grp_contents(i).name)
         
         % Get contents of the directory where the tract measures for this subject are stored.
-        grp_contents = dir(fullfile(rootDir, blprojectid));
+        sub_contents_tractprofiles = dir(fullfile(grp_contents(i).folder, grp_contents(i).name,  '/dt-neuro-tractprofile*/profiles/*.csv'));
         
         % Remove the '.' and '..' files.
-        grp_contents = grp_contents(arrayfun(@(x) x.name(1), grp_contents) ~= '.');
+        sub_contents_tractprofiles = sub_contents_tractprofiles(arrayfun(@(x) x.name(1), sub_contents_tractprofiles) ~= '.');
         
-        % Keep only names that are subject folders.
-        grp_contents = grp_contents(arrayfun(@(x) x.name(1), grp_contents) == 's');
+        for j = 1:size(sub_contents_tractprofiles)
+            
+            % Preallocate based on number of subjects(size(grp_contents)) and number of tracts (size(sub_contents...)).
+            if i == 1 && j == 1
+                
+                tract = {}; m = NaN(size(grp_contents, 1), size(sub_contents_tractprofiles, 1));
+                
+            end
+            
+            % Read in data for this subject and this tract.
+            data_temp = readtable([sub_contents_tractprofiles(j).folder filesep sub_contents_tractprofiles(j).name]);
+            
+            % Get middle 80%.
+            start = size(data_temp, 1)*.1;
+            stop = size(data_temp, 1)*.9;
+            
+            % Read in mean WM measure.
+            if strcmp(wm_measure, 'ad')
+                
+                m(i, j) = mean(data_temp.ad_1(start:stop));
+                
+            elseif strcmp(wm_measure, 'fa')
+                
+                m(i, j) = mean(data_temp.fa_1(start:stop));
+                
+            elseif strcmp(wm_measure, 'md')
+                
+                m(i, j) = mean(data_temp.md_1(start:stop));
+                
+            elseif strcmp(wm_measure, 'rd')
+                
+                m(i, j) = mean(data_temp.rd_1(start:stop));
+                
+            elseif strcmp(wm_measure, 'icvf')
+                
+                m(i, j) = mean(data_temp.icvf_1(start:stop));
+                
+            elseif strcmp(wm_measure, 'isovf')
+                
+                m(i, j) = mean(data_temp.isovf_1(start:stop));
+                
+            elseif strcmp(wm_measure, 'od')
+                
+                m(i, j) = mean(data_temp.od_1(start:stop));
+                
+            end
+            
+            % Grab tract name for grouping variable.
+            tract{i, j} = sub_contents_tractprofiles(j).name(1:end-13);
+            
+            clear data_temp
+            
+        end % end j
         
-        % Load in each tract's tractography measures for this subject.        
-        for i = 1:size(grp_contents, 1)
-            
-            % Grab subID.
-            sub(i) = str2num(grp_contents(i).name(end-2:end));
-                
-            % Display current sub ID.
-            disp(grp_contents(i).name)
-            
-            % Get contents of the directory where the tract measures for this subject are stored.
-            sub_contents_tractprofiles = dir(fullfile(grp_contents(i).folder, grp_contents(i).name,  '/dt-neuro-tractprofile*/profiles/*.csv'));
-                        
-            % Remove the '.' and '..' files.
-            sub_contents_tractprofiles = sub_contents_tractprofiles(arrayfun(@(x) x.name(1), sub_contents_tractprofiles) ~= '.');
-            
-            for j = 1:size(sub_contents_tractprofiles)
-                
-                % Preallocate based on number of subjects(size(grp_contents)) and number of tracts (size(sub_contents...)).
-                if i == 1 && j == 1
-                    
-                    tract = {}; m = NaN(size(grp_contents, 1), size(sub_contents_tractprofiles, 1));
-                            
-                end
-                
-                % Read in data for this subject and this tract.
-                data_temp = readtable([sub_contents_tractprofiles(j).folder filesep sub_contents_tractprofiles(j).name]);
-                
-                % Get middle 80%.
-                start = size(data_temp, 1)*.1;
-                stop = size(data_temp, 1)*.9;
-                
-                % Read in mean WM measure.
-                if strcmp(wm_measure, 'ad')
-                    
-                    m(i, j) = mean(data_temp.ad_1(start:stop)); 
-                    
-                elseif strcmp(wm_measure, 'fa')
-                    
-                    m(i, j) = mean(data_temp.fa_1(start:stop)); 
-                    
-                elseif strcmp(wm_measure, 'md')
-                    
-                    m(i, j) = mean(data_temp.md_1(start:stop)); 
-                    
-                elseif strcmp(wm_measure, 'rd')
-                    
-                    m(i, j) = mean(data_temp.rd_1(start:stop)); 
-                    
-                elseif strcmp(wm_measure, 'icvf')
-                    
-                    m(i, j) = mean(data_temp.icvf_1(start:stop)); 
-                    
-                elseif strcmp(wm_measure, 'isovf')
-                    
-                    m(i, j) = mean(data_temp.isovf_1(start:stop)); 
-                    
-                elseif strcmp(wm_measure, 'od')
-                    
-                    m(i, j) = mean(data_temp.od_1(start:stop)); 
-                    
-                end
-                
-                % Grab tract name for grouping variable.
-                tract{i, j} = sub_contents_tractprofiles(j).name(1:end-13);
-                
-                clear data_temp
-                
-            end % end j
-            
-        end
-            
+    end % end i
+    
     % Find empty cells.
     t = find(cellfun(@isempty,tract));
     
@@ -175,47 +146,28 @@ for w = 1:length(w_measures)
     % Convert all zeros to NaN;
     wm(wm == 0) = NaN;
     
-    % Remove 'empty' column from data and header.
-    wm = wm(:, find(~all(isnan(wm), 1)));
-    wm_header = list_tract(~strcmp(list_tract, 'empty'));
+    % Remove 'empty' column from data and header and append subID.
+    wm = cat(2, transpose(sub), wm(:, find(~all(isnan(wm), 1))));
+    wm_header = [{'subID'}, transpose(list_tract(~strcmp(list_tract, 'empty')))];
     
-    % Create grouping vectors, one subject at a time.
-    for s = 1:length(sub)
+    % Create grouping and behavioral vectors.
+    beh = cat(2, beh_data_in_tbl.SubjectID, beh_data_in_tbl.group_age, beh_data_in_tbl.Age_months, beh_data_in_tbl.group_lit, beh_data_in_tbl.c_lit, ...
+        beh_data_in_tbl.group_vm, beh_data_in_tbl.c_vm, beh_data_in_tbl.group_fm, beh_data_in_tbl.c_fm, beh_data_in_tbl.Sex);
+    
+    % Determine which subIDs appear in both WM and BEH.
+    sub_wm_beh = intersect(wm(:, find(strcmp(wm_header, 'subID'))), beh_data_in_tbl.SubjectID);
         
-        % Only do this for subjects for whom we have behavioral data.
-        if ismember(sub(s), beh_data_in(:, find(strcmp(beh_data_in_header, 'SubjectID'))))
-                    
-            % Get this subject's AGE group.
-            group(s) = beh_data_in(find(sub(s) == beh_data_in(:, find(strcmp(beh_data_in_header, 'SubjectID')))), find(strcmp(beh_data_in_header, gp_in)));
-            
-            % Get this subject's MEASURE.
-            measure(s) = beh_data_in(find(sub(s) == beh_data_in(:, find(strcmp(beh_data_in_header, 'SubjectID')))), find(strcmp(beh_data_in_header, measure_in)));
-            
-            % Get this subject's AGE.
-            cov_age(s) = beh_data_in(find(sub(s) == beh_data_in(:, find(strcmp(beh_data_in_header, 'SubjectID')))), find(strcmp(beh_data_in_header, 'Age_months')));
-            
-            % Get this subject's SEX.
-            cov_sex(s) = beh_data_in(find(sub(s) == beh_data_in(:, find(strcmp(beh_data_in_header, 'SubjectID')))), find(strcmp(beh_data_in_header, 'Sex')));
-              
-            % Get this subject's LIT.
-            c_lit(s) = beh_data_in(find(sub(s) == beh_data_in(:, find(strcmp(beh_data_in_header, 'SubjectID')))), find(strcmp(beh_data_in_header, 'c_lit')));
-                  
-            % Get this subject's VM.
-            c_vm(s) = beh_data_in(find(sub(s) == beh_data_in(:, find(strcmp(beh_data_in_header, 'SubjectID')))), find(strcmp(beh_data_in_header, 'c_vm')));
-                  
-            % Get this subject's FM.
-            c_fm(s) = beh_data_in(find(sub(s) == beh_data_in(:, find(strcmp(beh_data_in_header, 'SubjectID')))), find(strcmp(beh_data_in_header, 'c_fm')));
-                  
-        end % end if ismember
-        
-    end % end s
-          
+    % Get indices of subjects who appear in both WM and BEH.
+    sub_idx_wm = ismember(wm(:, find(strcmp(wm_header, 'subID'))), sub_wm_beh);
+    sub_idx_beh = ismember(beh_data_in_tbl.SubjectID, sub_wm_beh);
+
+    % Select only subjects who appear in both WM and BEH.
     % Concatenate into one data array and one header array.
-    data_all = cat(2, transpose(sub), transpose(group), transpose(measure), transpose(cov_age), transpose(cov_sex), ...
-        transpose(c_lit), transpose(c_vm), transpose(c_fm),wm); 
+    % Remove redundant subID columns.
+    data_all = cat(2, beh(sub_idx_beh, :), wm(sub_idx_wm, find(strcmp(wm_header, 'subID'))+1:end));    
+    data_all_header = [{'subID',  'gp_age', 'cov_age', 'gp_lit', 'c_lit', 'gp_vm', 'c_vm', ...
+        'gp_fm', 'c_fm', 'cov_sex'}, wm_header{find(strcmp(wm_header, 'subID'))+1:end}];
     
-    data_all_header = [{'subID', gp_in, beh_measure, 'cov_age', 'cov_sex', 'c_lit', 'c_vm', 'c_fm'}, wm_header{:}];
-        
     % Remove outliers.
     if strcmp(remove_outliers, 'yes') && exist('outlier')
         
@@ -226,18 +178,17 @@ for w = 1:length(w_measures)
         data_all = data_all(~idx_outlier, :);
         
     end
-        
+    
     data_tbl = array2table(data_all, 'VariableNames', data_all_header);
     
     % Save all variables.
-    save([rootDir 'supportFiles/LWX_data_' wm_measure '_' beh_measure '_raw.mat'], 'data_tbl')
+    save([rootDir 'supportFiles/LWX_data_' wm_measure '_raw.mat'], 'data_tbl')
     
     % Reset for next loop.
-    clearvars -except w b rootDir beh_data_in_header beh_data_in blprojectid remove_outliers b_measures w_measures
-    
-    end
+    clearvars -except w rootDir beh_data_in_tbl beh_data_in_header beh_data_in blprojectid remove_outliers w_measures
     
 end
+
 
 
 

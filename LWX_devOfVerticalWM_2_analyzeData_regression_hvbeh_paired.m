@@ -20,19 +20,19 @@ beh_measure = {'age_mo', 'c_lit', 'c_vm', 'c_fm'};
 
 %% Tractography
 
-% Read in data (from LWX_devOfVerticalWM_v3_loadData.m).
-load(fullfile(rootDir, 'supportFiles', ['LWX_data_' wm_measure '_age_raw.mat']))
+% Read in data.
+load(fullfile(rootDir, 'supportFiles', ['LWX_data_' wm_measure '_raw.mat']))
 
 % Convert into array and header for ease.
 data_all_in = table2array(data_tbl);
 data_all_in_header = data_tbl.Properties.VariableNames;
 
 % Get grouping variable. NOTE: need to add lit, vm, and fm.
-if strcmp(beh_measure{1}, 'age_mo')
+% if strcmp(beh_measure{1}, 'age_mo')
     
-    group = data_tbl.group_age;
+    group = data_tbl.gp_age;
     
-end
+% end
 
 % Get index matrices for hypothesis-driven grouping of WM tracts.
 for k = 1:length(data_all_in_header)
@@ -62,16 +62,7 @@ vt = data_all_in(group ~= 3, v_idx); vt(vt==0) = NaN;
 
 % tract group mean z-score: performed within-category, across-subjects to control for subject-level
 % differences in 'reactivity' while keeping subject-level differences in the WM measurement of interest
-% for c = 1:size(ht, 2)
-%     ht(isnan(ht(:, c)), c)=nanmean(ht(:, c)); % set NaNs to the mean for now
-% end
-% z_ht = zscore(ht, 0, 1);
 z_ht = (nanmean(ht, 1) - ht)./nanstd(ht, [], 1);
-
-% for c = 1:size(vt, 2)
-%     vt(isnan(vt(:, c)), c)=nanmean(vt(:, c)); % set NaNs to the mean for now
-% end
-% z_vt = zscore(vt, 0, 1);
 z_vt = (nanmean(vt, 1) - vt)./nanstd(vt, [], 1);
 
 % Subset list_tracts so that we can call the correct tract names later.
@@ -81,7 +72,8 @@ list_tract_vt = data_all_in_header(v_idx);
 %% Behavior.
 
 % Subselect only data for children and for the covariates of interest.
-beh = cat(2, data_tbl.age(group~=3), data_tbl.c_lit(group~=3), data_tbl.c_vm(group~=3), data_tbl.c_fm(group~=3));
+beh = cat(2, data_tbl.cov_age(group~=3), data_tbl.c_lit(group~=3), data_tbl.c_vm(group~=3), data_tbl.c_fm(group~=3), ...
+    data_tbl.cov_sex(group~=3));
 
 % Get measure-specific z-scores, based on within measure means/std.
 z_beh = (beh - nanmean(beh, 1))./nanstd(beh, 1);
@@ -94,13 +86,13 @@ for b = 1:length(beh_measure)
     
     % Concatenate each tract category into a panel and construct BIG matrix.
     if strcmp(beh_measure{b}, 'age_mo')
-        z_mat = (z_beh(:, 1));
+        z_mat = cat(1, z_beh(:, 1), beh(:, 5));
     elseif strcmp(beh_measure{b}, 'c_lit')
-        z_mat = (z_beh(:, 2));
+        z_mat = cat(1, z_beh(:, 2), beh(:, 5));
     elseif strcmp(beh_measure{b}, 'c_vm')
-        z_mat = (z_beh(:, 3));
+        z_mat = cat(1, z_beh(:, 3), beh(:, 5));
     elseif strcmp(beh_measure{b}, 'c_fm')
-        z_mat = (z_beh(:, 4));
+        z_mat = cat(1, z_beh(:, 4), beh(:, 5));
     end
     
     for v = 1:length(list_tract_vt)
@@ -115,13 +107,13 @@ for b = 1:length(beh_measure)
             %% Determine if Random Effect is needed for 'subject' and Perform GLM.
             
             % TRACTS: Design matrix, (i.e., [WMa, WMm, WMv]), fixed effects
-            X = cat(2, z_ht(:, h), z_vt(:, v));
+            X = blkdiag([z_ht(:, h), z_vt(:, v)], [z_ht(:, h), z_vt(:, v)]);
             
-            % TRACTS: Design matrix, (i.e., [WMa, WMm, WMv]), random effects
-            Z = cat(2, z_ht(:, h), z_vt(:, v));
+            % CONSTANT: Design matrix, random effects
+            Z = ones(size(X, 1), 1);
             
             % GROUPING Variable:
-            G = data_tbl.subID(group ~= 3);
+            G = repmat(data_tbl.subID(group ~= 3), [2 1]);
             
             % TRAINING CONDITION: Define the outcome data, (i.e., behavior).
             y = z_mat;
@@ -132,8 +124,8 @@ for b = 1:length(beh_measure)
 %             mdl = fitlme(tbl, [beh_measures{b} '~' list_tract_ht{h} '+' list_tract_vt{v} '+(1|subject)']);
 %             
             % Perform fitting procedure with fitlm: 'Recog ~ WMa + WMm + Wmz + 1|subj';
-            mdl = fitlmematrix(X, y, Z, G, 'Covariancepattern', 'Diagonal', 'FixedEffectPredictors', [list_tract_ht(h); list_tract_vt(v)], ...
-                'RandomEffectGroups', {'Subject'});
+            mdl = fitlmematrix(X, y, Z, G, 'Covariancepattern', 'Diagonal', 'FixedEffectPredictors', [list_tract_ht(h); list_tract_vt(v); ...
+                strcat(list_tract_ht(h), '_sex'); strcat(list_tract_vt(v), '_sex')], 'RandomEffectGroups', {'Subject'});
             tag = 0;
             
             format short
@@ -145,7 +137,7 @@ for b = 1:length(beh_measure)
             disp(['Rsquared is: ' num2str(mdl.Rsquared.Ordinary) '.']);
             
             % Posthoc comparison for v > h.
-            [pVal, F, df1, df2] = coefTest(mdl, [-1 1]);
+            [pVal, F, df1, df2] = coefTest(mdl, [-1 1 0 0]);
             disp(['Planned comparison ' list_tract_vt{v} ' > ' list_tract_ht{h} ' for ' beh_measure{b} ' : F(' ...
                 num2str(df1) ', ' num2str(df2) ') = ' num2str(F) ', p = ' num2str(pVal) '.'])
             

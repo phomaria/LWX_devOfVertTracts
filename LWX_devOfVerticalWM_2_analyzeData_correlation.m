@@ -12,8 +12,8 @@ format shortG
 
 control_age = 'yes';
 
-wm_measure = 'fa'; %fa, od, icvf, isovf
-y_min = .4; y_max = .7;
+wm_measure = 'fa'; %fa [.4, .7], ad [1, 2], rd [.4, .8], md [.6, 1.1], icvf [.4, 1], isovf [0, .3], od [.1, .4]
+y_min = 0.4; y_max = 0.7;
 save_figures = 'yes';
 
 % Set working directories.
@@ -22,17 +22,18 @@ rootDir = '/N/dc2/projects/lifebid/development/LWX_developmentOfVerticalWM/';
 
 beh_measure = 'age'; %age, lit, vm, fm
 
-% Read in data (from LWX_devOfVerticalWM_v3_loadData.m).
-load([rootDir 'supportFiles/LWX_data_' wm_measure '_' beh_measure '_raw.mat'])
+% Read in data.
+load(fullfile(rootDir, 'supportFiles', ['LWX_data_' wm_measure '_raw.mat']));
 
 % Convert into array and header for ease.
 data_all_in = table2array(data_tbl);
 data_all_in_header = data_tbl.Properties.VariableNames;
 
-% Get grouping variable. NOTE: need to add lit, vm, and fm.
+% Get grouping variable. NOTE: need to add lit, vm, and fm. This means also
+% that measure_childrenOnly_z needs to be defined for the lit, vm, and fm cases.
 if strcmp(beh_measure, 'age')
     
-    group = data_tbl.group_age;
+    group = data_tbl.gp_age;
     
 end
 
@@ -310,6 +311,7 @@ if strcmp(beh_measure, 'age')
     hold on;
     scatter(repmat(max(data_tbl.cov_age(group~=3) + 4), size(ht_adult(:))), ht_adult(:), 'MarkerEdgeColor', c(count, :))
     [r, p, ~, slope] = plotcorr2(repmat(data_tbl.cov_age(group~=3), [size(ht, 2) 1]), ht(:), [beh_measure ' (mo)'], ['Average ' wm_measure], [], 'Horizontal', c(count, :), 5);
+    ylim([y_min y_max]);
     title(['Horizontal Tracts, slope = ' num2str(slope) ', r = ' num2str(r) ', p = ' num2str(p)]);
     hold off;
     

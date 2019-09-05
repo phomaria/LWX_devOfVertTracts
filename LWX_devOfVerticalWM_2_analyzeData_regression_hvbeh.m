@@ -21,19 +21,19 @@ beh_measure = {'age', 'lit', 'vm', 'fm'}; %NOTE: this only uses age right now.
 
 %% Tractography
 
-% Read in data (from LWX_devOfVerticalWM_v3_loadData.m).
-load(fullfile(rootDir, 'supportFiles', ['LWX_data_' wm_measure '_' beh_measure{1} '_raw.mat']))
+% Read in data.
+load(fullfile(rootDir, 'supportFiles', ['LWX_data_' wm_measure '_raw.mat']))
 
 % Convert into array and header for ease.
 data_all_in = table2array(data_tbl);
 data_all_in_header = data_tbl.Properties.VariableNames;
 
 % Get grouping variable. NOTE: need to add lit, vm, and fm.
-if strcmp(beh_measure{1}, 'age')
+% if strcmp(beh_measure{1}, 'age')
     
-    group = data_tbl.group_age;
+group = data_tbl.gp_age;
     
-end
+% end
 
 % Get index matrices for hypothesis-driven grouping of WM tracts.
 for k = 1:length(data_all_in_header)
@@ -46,8 +46,8 @@ for k = 1:length(data_all_in_header)
         || strcmp(data_all_in_header{k}, 'leftSLF3') || strcmp(data_all_in_header{k}, 'rightSLF3');
     
     % Indices of vertical tracts.
-    v_idx(k) = strcmp(data_all_in_header{k}, 'leftAslant') || strcmp(data_all_in_header{k}, 'rightAslant') ...
-        || strcmp(data_all_in_header{k}, 'leftTPC') || strcmp(data_all_in_header{k}, 'rightTPC') ...
+    v_idx(k) = strcmp(data_all_in_header{k}, 'leftTPC') || strcmp(data_all_in_header{k}, 'rightTPC') ...
+        || strcmp(data_all_in_header{k}, 'leftAslant') || strcmp(data_all_in_header{k}, 'rightAslant') ...
         || strcmp(data_all_in_header{k}, 'leftpArc') || strcmp(data_all_in_header{k}, 'rightpArc') ...
         || strcmp(data_all_in_header{k}, 'leftMDLFspl') || strcmp(data_all_in_header{k}, 'rightMDLFspl') ...
         || strcmp(data_all_in_header{k}, 'leftVOF') || strcmp(data_all_in_header{k}, 'rightVOF') ...
@@ -66,9 +66,7 @@ categorymean_h = nanmean(ht, 2);
 categorymean_v = nanmean(vt, 2);
 
 % ZSCORE the averages based on tract mean and standard deviation (i.e., dim=1) using the sample standard deviation (i.e., flag=0)
-% z_categorymean_h = (nanmean(categorymean_h, 1) - categorymean_h)./nanstd(categorymean_h, [], 1);
 z_categorymean_h = zscore(categorymean_h, 0, 1);
-% z_categorymean_v = (nanmean(categorymean_v, 1) - categorymean_v)./nanstd(categorymean_v, [], 1);
 z_categorymean_v = zscore(categorymean_v, 0, 1);
 
 % Order the WM predictor to conform to the required data structure for LMM: https://www.mathworks.com/help/stats/prepare-data-for-linear-mixed-effects-models.html
@@ -78,7 +76,8 @@ z_categorymean = temp(:); clear temp
 %% Behavior.
 
 % Subselect only data for children and for the covariates of interest.
-beh = cat(2, data_tbl.age(group~=3), data_tbl.c_lit(group~=3), data_tbl.c_vm(group~=3), data_tbl.c_fm(group~=3));
+beh = cat(2, data_tbl.cov_age(group~=3), data_tbl.c_lit(group~=3), data_tbl.c_vm(group~=3), data_tbl.c_fm(group~=3), ...
+    data_tbl.cov_sex(group~=3));
 
 % Get measure-specific z-scores (even for age).
 z_beh = (beh - nanmean(beh))./nanstd(beh);
@@ -86,13 +85,13 @@ z_beh = (beh - nanmean(beh))./nanstd(beh);
 %% Perform Multiple Linear Regression: Beh ~ WMh + WMv + 1|Subject.
 
 % RESPONSE VARIABLE: Define behavior the response variable.
-y = cat(1, z_beh(:, 1), z_beh(:, 2), z_beh(:, 3), z_beh(:, 4));
+y = cat(1, z_beh(:, 1), z_beh(:, 2), z_beh(:, 3), z_beh(:, 4), beh(:, 5));
 
 % Add noise to respons variable.
 % y = y + rand(size(y));
 
 % FIXED EFFECTS: define design matrix.
-X = blkdiag([z_categorymean_h z_categorymean_v], [z_categorymean_h z_categorymean_v], [z_categorymean_h z_categorymean_v], [z_categorymean_h z_categorymean_v]);
+X = blkdiag([z_categorymean_h z_categorymean_v], [z_categorymean_h z_categorymean_v], [z_categorymean_h z_categorymean_v], [z_categorymean_h z_categorymean_v], [z_categorymean_h z_categorymean_v]);
 
 % RANDOM EFFECT: define random intercept.
 Z = ones(size(y));
@@ -101,12 +100,12 @@ Z = ones(size(y));
 G = repmat(data_tbl.subID(group ~= 3), [size(z_beh, 2) 1]);
 
 % Convert to table for LME.
-tbl = array2table(cat(2, y, X, Z, G), 'VariableNames', {'beh', 'age_h', 'age_v', 'lit_h', 'lit_v', 'vm_h', 'vm_v', 'fm_h', 'fm_v', 'constant', 'sub'});
+tbl = array2table(cat(2, y, X, Z, G), 'VariableNames', {'beh', 'age_h', 'age_v', 'lit_h', 'lit_v', 'vm_h', 'vm_v', 'fm_h', 'fm_v', 'sex_h', 'sex_v', 'constant', 'sub'});
 
 % Perform fitting procedure with fitlme: 'Recog ~ WMh + Wmv + 1|subj';
 % fitlemematrix uses fitlme but does not require table format
 mdl = fitlmematrix([ones(size(y)) X], y, Z, G, 'FixedEffectPredictors', {'intercept', 'age_Horizontal', 'age_Vertical', ...
-    'lit_Horizontal', 'lit_Vertical', 'vm_Horizontal', 'vm_Vertical', 'fm_Horizontal', 'fm_Vertical'}, ...
+    'lit_Horizontal', 'lit_Vertical', 'vm_Horizontal', 'vm_Vertical', 'fm_Horizontal', 'fm_Vertical', 'sex_Horizontal', 'sex_Vertical'}, ...
     'RandomEffectPredictors', {'intercept'}, 'RandomEffectGroups', {'subject'})
 % mdl = fitlm(tbl, 'beh~ 1 + age_h + age_v + lit_h + lit_v + vm_h + vm_v + fm_h + fm_v + (1|sub)')
 
@@ -125,27 +124,27 @@ disp(['Model: F = ' num2str(f3) ', p = ' num2str(p3)])
 disp(mdl.Coefficients)
 
 % Posthoc comparison for v > h.
-[pVal, F, df1, df2] = coefTest(mdl, [0 -1 1 -1 1 -1 1 -1 1]);
+[pVal, F, df1, df2] = coefTest(mdl, [0 -1 1 -1 1 -1 1 -1 1 0 0]);
 disp(['Planned comparison All Vertical Tracts > All Horizontal Tracts for All Behavioral Measures: F(' ...
     num2str(df1) ', ' num2str(df2) ') = ' num2str(F) ', p = ' num2str(pVal) '.'])
 
 % Posthoc comparison for v > h, age.
-[pVal, F, df1, df2] = coefTest(mdl, [0 -1 1 0 0 0 0 0 0]);
+[pVal, F, df1, df2] = coefTest(mdl, [0 -1 1 0 0 0 0 0 0 0 0]);
 disp(['Planned comparison All Vertical Tracts > All Horizontal Tracts for Age: F(' ...
     num2str(df1) ', ' num2str(df2) ') = ' num2str(F) ', p = ' num2str(pVal) '.'])
 
 % Posthoc comparison for v > h, literacy.
-[pVal, F, df1, df2] = coefTest(mdl, [0 0 0 -1 1 0 0 0 0]);
+[pVal, F, df1, df2] = coefTest(mdl, [0 0 0 -1 1 0 0 0 0 0 0]);
 disp(['Planned comparison All Vertical Tracts > All Horizontal Tracts for Literacy: F(' ...
     num2str(df1) ', ' num2str(df2) ') = ' num2str(F) ', p = ' num2str(pVal) '.'])
 
 % Posthoc comparison for v > h, visual-motor.
-[pVal, F, df1, df2] = coefTest(mdl, [0 0 0 0 0 -1 1 0 0]);
+[pVal, F, df1, df2] = coefTest(mdl, [0 0 0 0 0 -1 1 0 0 0 0]);
 disp(['Planned comparison All Vertical Tracts > All Horizontal Tracts for Visual-Motor Skill: F(' ...
     num2str(df1) ', ' num2str(df2) ') = ' num2str(F) ', p = ' num2str(pVal) '.'])
 
 % Posthoc comparison for v > h, fine-motor.
-[pVal, F, df1, df2] = coefTest(mdl, [0 0 0 0 0 0 0 -1 1]);
+[pVal, F, df1, df2] = coefTest(mdl, [0 0 0 0 0 0 0 -1 1 0 0]);
 disp(['Planned comparison All Vertical Tracts > All Horizontal Tracts for Fine-Motor SKill: F(' ...
     num2str(df1) ', ' num2str(df2) ') = ' num2str(F) ', p = ' num2str(pVal) '.'])
 
@@ -161,26 +160,26 @@ markersize = 8; buffer = 0.2; fontsize = 14; linesize = 3;
 % y_min = min(mdl.Coefficients.SE) - 1; y_max = max(mdl.Coefficients.SE) + 1;
 
 % DI
-h1 = plot(xticks([1, 5]), mdl.Coefficients.Estimate([tag+1, tag+2]), 'ko', 'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black', 'MarkerSize', markersize-1, 'HandleVisibility', 'off'); hold on;
-errorbars = errorbar(xticks([1, 5]), mdl.Coefficients.Estimate([tag+1, tag+2]), mdl.Coefficients.SE([tag+1, tag+2]));
+h1 = plot(xticks([1, 6]), mdl.Coefficients.Estimate([tag+1, tag+2]), 'ko', 'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black', 'MarkerSize', markersize-1, 'HandleVisibility', 'off'); hold on;
+errorbars = errorbar(xticks([1, 6]), mdl.Coefficients.Estimate([tag+1, tag+2]), mdl.Coefficients.SE([tag+1, tag+2]));
 set(errorbars, 'LineStyle', 'none');
 set(errorbars,  'LineWidth', 1, 'Color', 'k', 'Marker', 'o', 'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black', 'MarkerSize', markersize);
 
 % DnI
-h2 = plot(xticks([2, 6]), mdl.Coefficients.Estimate([tag+3, tag+4]), 'square', 'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black', 'MarkerSize', markersize);
-errorbars = errorbar(xticks([2, 6]), mdl.Coefficients.Estimate([tag+3, tag+4]), mdl.Coefficients.SE([tag+3, tag+4]));
+h2 = plot(xticks([2, 7]), mdl.Coefficients.Estimate([tag+3, tag+4]), 'square', 'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black', 'MarkerSize', markersize);
+errorbars = errorbar(xticks([2, 7]), mdl.Coefficients.Estimate([tag+3, tag+4]), mdl.Coefficients.SE([tag+3, tag+4]));
 set(errorbars, 'LineStyle', 'none');
 set(errorbars,  'LineWidth', 1, 'Color', 'k', 'Marker', 'square', 'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black', 'MarkerSize', markersize);
 
 % WD
-h3 = plot(xticks([3, 7]), mdl.Coefficients.Estimate([tag+5, tag+6]), '^', 'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black', 'MarkerSize', markersize);
-errorbars = errorbar(xticks([3, 7]), mdl.Coefficients.Estimate([tag+5, tag+6]), mdl.Coefficients.SE([tag+5, tag+6]));
+h3 = plot(xticks([3, 8]), mdl.Coefficients.Estimate([tag+5, tag+6]), '^', 'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black', 'MarkerSize', markersize);
+errorbars = errorbar(xticks([3, 8]), mdl.Coefficients.Estimate([tag+5, tag+6]), mdl.Coefficients.SE([tag+5, tag+6]));
 set(errorbars, 'LineStyle', 'none');
 set(errorbars,  'LineWidth', 1, 'Color', 'k', 'Marker', '^', 'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black', 'MarkerSize', markersize);
 
 % WS
-h4 = plot(xticks([4, 8]), mdl.Coefficients.Estimate([tag+7, tag+8]), 'diamond', 'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black', 'MarkerSize', markersize);
-errorbars = errorbar(xticks([4, 8]), mdl.Coefficients.Estimate([tag+7, tag+8]), mdl.Coefficients.SE([tag+7, tag+8]));
+h4 = plot(xticks([4, 9]), mdl.Coefficients.Estimate([tag+7, tag+8]), 'diamond', 'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black', 'MarkerSize', markersize);
+errorbars = errorbar(xticks([4, 9]), mdl.Coefficients.Estimate([tag+7, tag+8]), mdl.Coefficients.SE([tag+7, tag+8]));
 set(errorbars, 'LineStyle', 'none');
 set(errorbars,  'LineWidth', 1, 'Color', 'k', 'Marker', 'diamond', 'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black', 'MarkerSize', markersize);
 

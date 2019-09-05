@@ -21,18 +21,18 @@ beh_measure = {'age_mo', 'c_lit', 'c_vm', 'c_fm'};
 %% Tractography
 
 % Read in data (from LWX_devOfVerticalWM_v3_loadData.m).
-load(fullfile(rootDir, 'supportFiles', ['LWX_data_' wm_measure '_age_raw.mat']))
+load(fullfile(rootDir, 'supportFiles', ['LWX_data_' wm_measure '_raw.mat']))
 
 % Convert into array and header for ease.
 data_all_in = table2array(data_tbl);
 data_all_in_header = data_tbl.Properties.VariableNames;
 
 % Get grouping variable. NOTE: need to add lit, vm, and fm.
-if strcmp(beh_measure{1}, 'age_mo')
+% if strcmp(beh_measure{1}, 'age_mo')
     
-    group = data_tbl.group_age;
+    group = data_tbl.gp_age;
     
-end
+% end
 
 % Get index matrices for hypothesis-driven grouping of WM tracts.
 for k = 1:length(data_all_in_header)
@@ -62,16 +62,7 @@ vt = data_all_in(group ~= 3, v_idx); vt(vt==0) = NaN;
 
 % tract group mean z-score: performed within-category, across-subjects to control for subject-level
 % differences in 'reactivity' while keeping subject-level differences in the WM measurement of interest
-% for c = 1:size(ht, 2)
-%     ht(isnan(ht(:, c)), c)=nanmean(ht(:, c)); % set NaNs to the mean for now
-% end
-% z_ht = zscore(ht, 0, 1);
 z_ht = (nanmean(ht, 1) - ht)./nanstd(ht, [], 1);
-
-% for c = 1:size(vt, 2)
-%     vt(isnan(vt(:, c)), c)=nanmean(vt(:, c)); % set NaNs to the mean for now
-% end
-% z_vt = zscore(vt, 0, 1);
 z_vt = (nanmean(vt, 1) - vt)./nanstd(vt, [], 1);
 
 % Subset list_tracts so that we can call the correct tract names later.
@@ -81,7 +72,8 @@ list_tract_vt = data_all_in_header(v_idx);
 %% Behavior.
 
 % Subselect only data for children and for the covariates of interest.
-beh = cat(2, data_tbl.age(group~=3), data_tbl.c_lit(group~=3), data_tbl.c_vm(group~=3), data_tbl.c_fm(group~=3));
+beh = cat(2, data_tbl.cov_age(group~=3), data_tbl.c_lit(group~=3), data_tbl.c_vm(group~=3), data_tbl.c_fm(group~=3), ...
+    data_tbl.cov_sex(group~=3));
 
 % Get measure-specific z-scores, based on within measure means/std.
 z_beh = (beh - nanmean(beh, 1))./nanstd(beh, 1);
@@ -93,14 +85,15 @@ fcount = 0;
 for b = 1:length(beh_measure)
     
     % Concatenate each tract category into a panel and construct BIG matrix.
+    % Sex as covariate.
     if strcmp(beh_measure{b}, 'age_mo')
-        z_mat = (z_beh(:, 1));
+        z_mat = cat(2, z_beh(:, 1), beh(:, 5));
     elseif strcmp(beh_measure{b}, 'c_lit')
-        z_mat = (z_beh(:, 2));
+        z_mat = cat(2, z_beh(:, 2), beh(:, 5));
     elseif strcmp(beh_measure{b}, 'c_vm')
-        z_mat = (z_beh(:, 3));
+        z_mat = cat(2, z_beh(:, 3), beh(:, 5));
     elseif strcmp(beh_measure{b}, 'c_fm')
-        z_mat = (z_beh(:, 4));
+        z_mat = cat(2, z_beh(:, 4), beh(:, 5));
     end
     
     for v = 1:length(list_tract_vt)
@@ -127,7 +120,8 @@ for b = 1:length(beh_measure)
             y = cat(1, z_ht(:, h), z_vt(:, v));
             
             % Perform fitting procedure with fitlm: 'Recog ~ WMa + WMm + Wmz + 1|subj';
-            mdl = fitlmematrix([ones(size(X, 1), 1) X], y, Z, G, 'FixedEffectPredictors', [{'intercept'}; list_tract_ht(h); list_tract_vt(v)], ...
+            mdl = fitlmematrix([ones(size(X, 1), 1) X], y, Z, G, 'FixedEffectPredictors', [{'intercept'}; list_tract_ht(h); strcat(list_tract_ht(h), '_sex'); ...
+                list_tract_vt(v); strcat(list_tract_vt(v), '_sex')], ...
                 'RandomEffectPredictors', {'intercept'}, 'RandomEffectGroups', {'Subject'});
             tag = 1;
             
@@ -140,7 +134,7 @@ for b = 1:length(beh_measure)
             disp(['Rsquared is: ' num2str(mdl.Rsquared.Ordinary) '.']);
             
             % Posthoc comparison for v > h.
-            [pVal, F, df1, df2] = coefTest(mdl, [0 -1 1]);
+            [pVal, F, df1, df2] = coefTest(mdl, [0 -1 0 1 0]);
             disp(['Planned comparison ' list_tract_vt{v} ' > ' list_tract_ht{h} ' for ' beh_measure{b} ' : F(' ...
                 num2str(df1) ', ' num2str(df2) ') = ' num2str(F) ', p = ' num2str(pVal) '.'])
             
@@ -204,31 +198,31 @@ for b = 1:length(beh_measure)
     
     % Title.
     if strcmp(beh_measure{b}, 'age_mo') && strcmp(wm_measure, 'fa')
-        title('Fractional Anisotropy predicts Age (months).')
+        title('Age (months) predicts Fractional Anisotropy.')
     elseif strcmp(beh_measure{b}, 'c_lit') && strcmp(wm_measure, 'fa')
-        title('Fractional Anisotropy predicts Literacy.')
+        title('Literacy predicts Fractional Anisotropy.')
     elseif strcmp(beh_measure{b}, 'c_vm') && strcmp(wm_measure, 'fa')
-        title('Fractional Anisotropy predicts Visual-Motor Skill.')
+        title('Visual-Motor Skill predicts Fractional Anisotropy.')
     elseif strcmp(beh_measure{b}, 'c_fm') && strcmp(wm_measure, 'fa')
-        title('Fractional Anisotropy predicts Fine-Motor Skill.')
+        title('Fine-Motor Skill predicts Fractional Anisotropy.')
         
     elseif strcmp(beh_measure{b}, 'age_mo') && strcmp(wm_measure, 'ad')
-        title('Axial Diffusion predicts Age (months).')
+        title('Age (months) predicts Axial Diffusion.')
     elseif strcmp(beh_measure{b}, 'c_lit') && strcmp(wm_measure, 'ad')
-        title('Axial Diffusion predicts Literacy.')
+        title('Literacy predicts Axial Diffusion.')
     elseif strcmp(beh_measure{b}, 'c_vm') && strcmp(wm_measure, 'ad')
-        title('Axial Diffusion predicts Visual-Motor Skill.')
+        title('Visual-Motor Skill predicts Axial Diffusion.')
     elseif strcmp(beh_measure{b}, 'c_fm') && strcmp(wm_measure, 'ad')
-        title('Axial Diffusion predicts Fine-Motor Skill.')
+        title('Fine-Motor Skill predicts Axial Diffusion.')
         
     elseif strcmp(beh_measure{b}, 'age_mo') && strcmp(wm_measure, 'rd')
-        title('Radial Diffusion predicts Age (months).')
+        title('Age (months) predicts Radial Diffusion.')
     elseif strcmp(beh_measure{b}, 'c_lit') && strcmp(wm_measure, 'rd')
-        title('Radial Diffusion predicts Literacy.')
+        title('Literacy predicts Radial Diffusion.')
     elseif strcmp(beh_measure{b}, 'c_vm') && strcmp(wm_measure, 'rd')
-        title('Radial Diffusion predicts Visual-Motor Skill.')
+        title('Visual-Motor Skill predicts Radial Diffusion.')
     elseif strcmp(beh_measure{b}, 'c_fm') && strcmp(wm_measure, 'rd')
-        title('Radial Diffusion predicts Fine-Motor Skill.')
+        title('Fine-Motor Skill predicts Radial Diffusion.')
         
     elseif strcmp(beh_measure{b}, 'age_mo') && strcmp(wm_measure, 'md')
         title('Mean Diffusivity predicts Age (months).')
@@ -240,36 +234,36 @@ for b = 1:length(beh_measure)
         title('Mean Diffusivity predicts Fine-Motor Skill.')
         
     elseif strcmp(beh_measure{b}, 'age_mo') && strcmp(wm_measure, 'od')
-        title('Orientation Dispersion predicts Age (months).')
+        title('Age (months) predicts Orientation Dispersion.')
     elseif strcmp(beh_measure{b}, 'c_lit') && strcmp(wm_measure, 'od')
-        title('Orientation Dispersion predicts Literacy.')
+        title('Literacy predicts Orientation Dispersion.')
     elseif strcmp(beh_measure{b}, 'c_vm') && strcmp(wm_measure, 'od')
-        title('Orientation Dispersion predicts Visual-Motor Skill.')
+        title('Visual-Motor Skill predicts Orientation Dispersion.')
     elseif strcmp(beh_measure{b}, 'c_fm') && strcmp(wm_measure, 'od')
-        title('Orientation Dispersion predicts Fine-Motor Skill.')
+        title('Fine-Motor Skill predicts Orientation Dispersion.')
         
     elseif strcmp(beh_measure{b}, 'age_mo') && strcmp(wm_measure, 'icvf')
-        title('Neurite Density (ICVF) predicts Age (months).')
+        title('Age (months) predicts Neurite Density (ICVF).')
     elseif strcmp(beh_measure{b}, 'c_lit') && strcmp(wm_measure, 'icvf')
-        title('Neurite Density (ICVF) predicts Literacy.')
+        title('Literacy predicts Neurite Density (ICVF).')
     elseif strcmp(beh_measure{b}, 'c_vm') && strcmp(wm_measure, 'icvf')
-        title('Neurite Density (ICVF) predicts Visual-Motor Skill.')
+        title('Visual-Motor Skill predicts Neurite Density (ICVF).')
     elseif strcmp(beh_measure{b}, 'c_fm') && strcmp(wm_measure, 'icvf')
-        title('Neurite Density (ICVF) predicts Fine-Motor Skill.');
+        title('Fine-Motor Skill predicts Neurite Density (ICVF).');
         
     elseif strcmp(beh_measure{b}, 'age_mo') && strcmp(wm_measure, 'isovf')
-        title('Isotropic Volume Fraction predicts Age (months).')
+        title('Age (months) predicts Isotropic Volume (ISOVF).')
     elseif strcmp(beh_measure{b}, 'c_lit') && strcmp(wm_measure, 'isovf')
-        title('Isotropic Volume Fraction predicts Literacy.')
+        title('Literacy predicts Isotropic Volume (ISOVF).')
     elseif strcmp(beh_measure{b}, 'c_vm') && strcmp(wm_measure, 'isovf')
-        title('Isotropic Volume Fraction predicts Visual-Motor Skill.')
+        title('Visual-Motor Skill predicts Isotropic Volume (ISOVF).')
     elseif strcmp(beh_measure{b}, 'c_fm') && strcmp(wm_measure, 'isovf')
-        title('Isotropic Volume Fraction predicts Fine-Motor Skill.');
+        title('Fine-Motor Skill predicts Isotropic Volume (ISOVF).');
         
     end
     
-    print([rootDir 'plots/plot_spy_' beh_measure{b} '_' wm_measure '_hv'], '-dpng')
-    print([rootDir 'plots/eps/plot_spy_' beh_measure{b} '_' wm_measure '_hv'], '-depsc')
+    print(fullfile(rootDir, 'plots', ['plot_spy_' beh_measure{b} '_' wm_measure '_hv']), '-dpng')
+    print(fullfile(rootDir, 'plots', ['eps', 'plot_spy_' beh_measure{b} '_' wm_measure '_hv']), '-depsc')
     
     hold off;
     
