@@ -68,7 +68,7 @@ for w = 1:length(w_measures)
         %% TRACTOGRAPHY.
         
         % Get contents of the directory where the tract measures for this subject are stored.
-        grp_contents = dir([rootDir filesep blprojectid filesep]);
+        grp_contents = dir(fullfile(rootDir, blprojectid));
         
         % Remove the '.' and '..' files.
         grp_contents = grp_contents(arrayfun(@(x) x.name(1), grp_contents) ~= '.');
@@ -86,7 +86,7 @@ for w = 1:length(w_measures)
             disp(grp_contents(i).name)
             
             % Get contents of the directory where the tract measures for this subject are stored.
-            sub_contents_tractprofiles = dir([grp_contents(i).folder filesep grp_contents(i).name '/dt-neuro-tractprofile*/profiles/*.csv']);
+            sub_contents_tractprofiles = dir(fullfile(grp_contents(i).folder, grp_contents(i).name,  '/dt-neuro-tractprofile*/profiles/*.csv'));
                         
             % Remove the '.' and '..' files.
             sub_contents_tractprofiles = sub_contents_tractprofiles(arrayfun(@(x) x.name(1), sub_contents_tractprofiles) ~= '.');
@@ -146,9 +146,7 @@ for w = 1:length(w_measures)
             end % end j
             
         end
-        
-    end
-    
+            
     % Find empty cells.
     t = find(cellfun(@isempty,tract));
     
@@ -198,14 +196,25 @@ for w = 1:length(w_measures)
             
             % Get this subject's SEX.
             cov_sex(s) = beh_data_in(find(sub(s) == beh_data_in(:, find(strcmp(beh_data_in_header, 'SubjectID')))), find(strcmp(beh_data_in_header, 'Sex')));
-                   
+              
+            % Get this subject's LIT.
+            c_lit(s) = beh_data_in(find(sub(s) == beh_data_in(:, find(strcmp(beh_data_in_header, 'SubjectID')))), find(strcmp(beh_data_in_header, 'c_lit')));
+                  
+            % Get this subject's VM.
+            c_vm(s) = beh_data_in(find(sub(s) == beh_data_in(:, find(strcmp(beh_data_in_header, 'SubjectID')))), find(strcmp(beh_data_in_header, 'c_vm')));
+                  
+            % Get this subject's FM.
+            c_fm(s) = beh_data_in(find(sub(s) == beh_data_in(:, find(strcmp(beh_data_in_header, 'SubjectID')))), find(strcmp(beh_data_in_header, 'c_fm')));
+                  
         end % end if ismember
         
     end % end s
           
     % Concatenate into one data array and one header array.
-    data_all = cat(2, transpose(sub), transpose(group), transpose(measure), transpose(cov_age), transpose(cov_sex), wm); 
-    data_all_header = [{'subID', gp_in, beh_measure, 'cov_age', 'cov_sex'}, wm_header{:}];
+    data_all = cat(2, transpose(sub), transpose(group), transpose(measure), transpose(cov_age), transpose(cov_sex), ...
+        transpose(c_lit), transpose(c_vm), transpose(c_fm),wm); 
+    
+    data_all_header = [{'subID', gp_in, beh_measure, 'cov_age', 'cov_sex', 'c_lit', 'c_vm', 'c_fm'}, wm_header{:}];
         
     % Remove outliers.
     if strcmp(remove_outliers, 'yes') && exist('outlier')
@@ -225,6 +234,8 @@ for w = 1:length(w_measures)
     
     % Reset for next loop.
     clearvars -except w b rootDir beh_data_in_header beh_data_in blprojectid remove_outliers b_measures w_measures
+    
+    end
     
 end
 

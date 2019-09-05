@@ -14,38 +14,52 @@ format shortG
 rootDir = '/N/dc2/projects/lifebid/development/LWX_developmentOfVerticalWM/';
 % addpath(genpath([rootDir 'proj-5a74d1e26ed91402ce400cca/']));
 
+y_min = -1.5; y_max = 1.5;
+
 wm_measure = 'fa'; %fa, ad, rd, md, od, icvf, isovf
-beh_measures = {'age', 'lit', 'vm', 'fm'}; %NOTE: this only uses age right now.
+beh_measure = {'age', 'lit', 'vm', 'fm'}; %NOTE: this only uses age right now.
 
 %% Tractography
 
 % Read in data (from LWX_devOfVerticalWM_v3_loadData.m).
-load([rootDir 'supportFiles/LWX_data_' wm_measure '_age_tractz.mat'])
-clearvars -except wm_z wm_childrenOnly wm_childrenOnly_z list_tract wm_measure rootDir covariates sub sub_childrenOnly beh_measure beh_measures
-y_min = -1.5; y_max = 1.5;
+load(fullfile(rootDir, 'supportFiles', ['LWX_data_' wm_measure '_' beh_measure{1} '_raw.mat']))
 
-% Get index matrices for hypothesis-driven grouping of WM tracts. LH only right now.
-for k = 1:size(list_tract, 1)
+% Convert into array and header for ease.
+data_all_in = table2array(data_tbl);
+data_all_in_header = data_tbl.Properties.VariableNames;
+
+% Get grouping variable. NOTE: need to add lit, vm, and fm.
+if strcmp(beh_measure{1}, 'age')
     
-    % Indices of horizontal tracts.
-    h_idx(k) = strcmp(list_tract{k}, 'leftSLF1And2') || strcmp(list_tract{k}, 'rightSLF1And2') ...
-        || strcmp(list_tract{k}, 'leftIFOF') || strcmp(list_tract{k}, 'rightIFOF') ...
-        || strcmp(list_tract{k}, 'leftILF') || strcmp(list_tract{k}, 'rightILF') ...
-        || strcmp(list_tract{k}, 'leftArc') || strcmp(list_tract{k}, 'rightArc') ...
-        || strcmp(list_tract{k}, 'leftSLF3') || strcmp(list_tract{k}, 'rightSLF3');
+    group = data_tbl.group_age;
     
-    v_idx(k) = strcmp(list_tract{k}, 'leftAslant') || strcmp(list_tract{k}, 'rightAslant') ...
-        || strcmp(list_tract{k}, 'leftTPC') || strcmp(list_tract{k}, 'rightTPC') ...
-        || strcmp(list_tract{k}, 'leftpArc') || strcmp(list_tract{k}, 'rightpArc') ...
-        || strcmp(list_tract{k}, 'leftMDLFspl') || strcmp(list_tract{k}, 'rightMDLFspl') ...
-        || strcmp(list_tract{k}, 'leftVOF') || strcmp(list_tract{k}, 'rightVOF') ...
-        || strcmp(list_tract{k}, 'leftMDLFang') || strcmp(list_tract{k}, 'rightMDLFang');
-        
 end
 
-% SELECT the measurements of the tracts that I care about and categorize them into h or v. Convert all zeros to NaN.
-ht = wm_childrenOnly(:, h_idx); ht(ht==0) = NaN;
-vt = wm_childrenOnly(:, v_idx); vt(vt==0) = NaN;
+% Get index matrices for hypothesis-driven grouping of WM tracts.
+for k = 1:length(data_all_in_header)
+    
+    % Indices of horizontal tracts.
+    h_idx(k) = strcmp(data_all_in_header{k}, 'leftSLF1And2') || strcmp(data_all_in_header{k}, 'rightSLF1And2') ...
+        || strcmp(data_all_in_header{k}, 'leftIFOF') || strcmp(data_all_in_header{k}, 'rightIFOF') ...
+        || strcmp(data_all_in_header{k}, 'leftILF') || strcmp(data_all_in_header{k}, 'rightILF') ...
+        || strcmp(data_all_in_header{k}, 'leftArc') || strcmp(data_all_in_header{k}, 'rightArc') ...
+        || strcmp(data_all_in_header{k}, 'leftSLF3') || strcmp(data_all_in_header{k}, 'rightSLF3');
+    
+    % Indices of vertical tracts.
+    v_idx(k) = strcmp(data_all_in_header{k}, 'leftAslant') || strcmp(data_all_in_header{k}, 'rightAslant') ...
+        || strcmp(data_all_in_header{k}, 'leftTPC') || strcmp(data_all_in_header{k}, 'rightTPC') ...
+        || strcmp(data_all_in_header{k}, 'leftpArc') || strcmp(data_all_in_header{k}, 'rightpArc') ...
+        || strcmp(data_all_in_header{k}, 'leftMDLFspl') || strcmp(data_all_in_header{k}, 'rightMDLFspl') ...
+        || strcmp(data_all_in_header{k}, 'leftVOF') || strcmp(data_all_in_header{k}, 'rightVOF') ...
+        || strcmp(data_all_in_header{k}, 'leftMDLFang') || strcmp(data_all_in_header{k}, 'rightMDLFang');
+    
+end
+
+% SELECT the measurements of the tracts that I care (h and v) and
+% the subjects that I care about (non-adults).
+% Categorize into h or v. Convert all zeros to NaN.
+ht = data_all_in(group ~= 3, h_idx); ht(ht==0) = NaN;
+vt = data_all_in(group ~= 3, v_idx); vt(vt==0) = NaN;
 
 % AVERAGE the WM propery of interest for each subject averaged across tracts within horizontal or vertical categories.
 categorymean_h = nanmean(ht, 2);
@@ -63,20 +77,8 @@ z_categorymean = temp(:); clear temp
 
 %% Behavior.
 
-% Read in behavioral data.
-load([rootDir 'supportFiles/LWX_all_groupings.mat']);
-
-% Header for LWX Behavioral Data.
-header = {'subID', 'age_mo', 'vmi', 'vp', 'mc', 'pegs_dom', 'pegs_ndom', 'lwi', 'spell', 'wa', 'sos', 'c_vm', 'c_fm', 'c_lit', 'gp_age', 'gp_lit', 'gp_vm', 'gp_fm'};
-
-% Select only those subjects for whom we have both behavioral and tractography data.
-subID_list = data_lwx(find(ismember(sub_childrenOnly, data_lwx(:, strcmp(header, 'subID')))), find(strcmp(header, 'subID')));
-
-% Subselect only data for children and for the covariates of interest. Remove unnecessary columns.
-beh = cat(2, data_lwx(find(ismember(sub_childrenOnly, data_lwx(:, strcmp(header, 'subID')))), find(strcmp(header, 'age_mo'))), ...
-    data_lwx(find(ismember(sub_childrenOnly, data_lwx(:, strcmp(header, 'subID')))), find(strcmp(header, 'c_lit'))), ...
-    data_lwx(find(ismember(sub_childrenOnly, data_lwx(:, strcmp(header, 'subID')))), find(strcmp(header, 'c_vm'))), ...
-    data_lwx(find(ismember(sub_childrenOnly, data_lwx(:, strcmp(header, 'subID')))), find(strcmp(header, 'c_fm'))));
+% Subselect only data for children and for the covariates of interest.
+beh = cat(2, data_tbl.age(group~=3), data_tbl.c_lit(group~=3), data_tbl.c_vm(group~=3), data_tbl.c_fm(group~=3));
 
 % Get measure-specific z-scores (even for age).
 z_beh = (beh - nanmean(beh))./nanstd(beh);
@@ -96,7 +98,7 @@ X = blkdiag([z_categorymean_h z_categorymean_v], [z_categorymean_h z_categorymea
 Z = ones(size(y));
 
 % GROUPING VARIABLE: subject.
-G = repmat(subID_list, [size(z_beh, 2) 1]); 
+G = repmat(data_tbl.subID(group ~= 3), [size(z_beh, 2) 1]);
 
 % Convert to table for LME.
 tbl = array2table(cat(2, y, X, Z, G), 'VariableNames', {'beh', 'age_h', 'age_v', 'lit_h', 'lit_v', 'vm_h', 'vm_v', 'fm_h', 'fm_v', 'constant', 'sub'});
@@ -105,7 +107,7 @@ tbl = array2table(cat(2, y, X, Z, G), 'VariableNames', {'beh', 'age_h', 'age_v',
 % fitlemematrix uses fitlme but does not require table format
 mdl = fitlmematrix([ones(size(y)) X], y, Z, G, 'FixedEffectPredictors', {'intercept', 'age_Horizontal', 'age_Vertical', ...
     'lit_Horizontal', 'lit_Vertical', 'vm_Horizontal', 'vm_Vertical', 'fm_Horizontal', 'fm_Vertical'}, ...
-    'RandomEffectPredictors', {'intercept'}, 'RandomEffectGroups', {'subject'}) 
+    'RandomEffectPredictors', {'intercept'}, 'RandomEffectGroups', {'subject'})
 % mdl = fitlm(tbl, 'beh~ 1 + age_h + age_v + lit_h + lit_v + vm_h + vm_v + fm_h + fm_v + (1|sub)')
 
 tag = 1;
@@ -199,7 +201,7 @@ elseif tag == 0 % random intercept for subject was used
     
 end
 
-legend([h1 h2 h3 h4], beh_measures, 'Location', 'southoutside', 'Orientation', 'horizontal');
+legend([h1 h2 h3 h4], beh_measure, 'Location', 'southoutside', 'Orientation', 'horizontal');
 set(gca,'xtick',[]); set(gca,'xticklabel',{[]}); set(gca,'FontSize', fontsize)
 ylabel('Beta Estimates +/- SE');
 box off;
@@ -231,7 +233,7 @@ hold off;
 % %     % (e.g., when between-group variable is something like age groups).
 %     t_out = array2table(cat(2, sub_childrenOnly, beh(:, 1), z_beh(:, 2:end), z_categorymean_h, z_categorymean_v), 'VariableNames', ...
 %         {'subID', 'Age_mo', 'zLiteracy', 'zVisualMotor', 'zFineMotor', 'zmeanH', 'zmeanV'});
-% %     
+% %
 % %     % Write.
 %     writetable(t_out, [rootDir 'LWX_devOfVerticalWM_forSPSS_' wm_measure '_hv.csv']);
 
@@ -250,10 +252,10 @@ X = [z_categorymean_h z_categorymean_v];
 Z = ones(size(y));
 
 % GROUPING VARIABLE: subject.
-G = subID_list;
+G = data_tbl.subID(group ~= 3);
 
 % Perform fitting procedure with fitlm: 'Recog ~ WMh + Wmv + 1|subj';
-tbl = array2table(cat(2, X, y, sub_childrenOnly), 'VariableNames', {'h', 'v', 'age', 'sub'});
+tbl = array2table(cat(2, X, y, G), 'VariableNames', {'h', 'v', 'age', 'sub'});
 mdl = fitlme(tbl, 'age~h+v+(1|sub)');
 tag = 0;
 
@@ -289,10 +291,10 @@ X = [z_categorymean_h z_categorymean_v];
 Z = ones(size(y));
 
 % GROUPING VARIABLE: subject.
-G = subID_list; 
+G = data_tbl.subID(group ~= 3);
 
 % Perform fitting procedure with fitlm: 'Recog ~ WMh + Wmv + 1|subj';
-tbl = array2table(cat(2, X, y, sub_childrenOnly), 'VariableNames', {'h', 'v', 'lit', 'sub'});
+tbl = array2table(cat(2, X, y, G), 'VariableNames', {'h', 'v', 'lit', 'sub'});
 mdl = fitlme(tbl, 'lit~h+v+(1|sub)');
 tag = 0;
 
@@ -328,10 +330,10 @@ X = [z_categorymean_h z_categorymean_v];
 Z = ones(size(y));
 
 % GROUPING VARIABLE: subject.
-G = subID_list; 
+G = data_tbl.subID(group ~= 3);
 
 % Perform fitting procedure with fitlm: 'Recog ~ WMh + Wmv + 1|subj';
-tbl = array2table(cat(2, X, y, sub_childrenOnly), 'VariableNames', {'h', 'v', 'vm', 'sub'});
+tbl = array2table(cat(2, X, y, G), 'VariableNames', {'h', 'v', 'vm', 'sub'});
 mdl = fitlme(tbl, 'vm~h+v+(1|sub)');
 tag = 0;
 
@@ -367,10 +369,10 @@ X = [z_categorymean_h z_categorymean_v];
 Z = ones(size(y));
 
 % GROUPING VARIABLE: subject.
-G = subID_list; 
+G = data_tbl.subID(group ~= 3);
 
 % Perform fitting procedure with fitlm: 'Recog ~ WMh + Wmv + 1|subj';
-tbl = array2table(cat(2, X, y, sub_childrenOnly), 'VariableNames', {'h', 'v', 'fm', 'sub'});
+tbl = array2table(cat(2, X, y, G), 'VariableNames', {'h', 'v', 'fm', 'sub'});
 mdl = fitlme(tbl, 'fm~h+v+(1|sub)');
 tag = 0;
 

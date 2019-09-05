@@ -14,6 +14,7 @@ control_age = 'yes';
 
 wm_measure = 'fa'; %fa, od, icvf, isovf
 y_min = .4; y_max = .7;
+save_figures = 'yes';
 
 % Set working directories.
 rootDir = '/N/dc2/projects/lifebid/development/LWX_developmentOfVerticalWM/';
@@ -22,27 +23,36 @@ rootDir = '/N/dc2/projects/lifebid/development/LWX_developmentOfVerticalWM/';
 beh_measure = 'age'; %age, lit, vm, fm
 
 % Read in data (from LWX_devOfVerticalWM_v3_loadData.m).
-load([rootDir 'supportFiles/LWX_data_' wm_measure '_' beh_measure '_tractz.mat'])
-p_val = 0.05; p_bonf = p_val/length(list_tract);
+load([rootDir 'supportFiles/LWX_data_' wm_measure '_' beh_measure '_raw.mat'])
 
-save_figures = 'yes';
+% Convert into array and header for ease.
+data_all_in = table2array(data_tbl);
+data_all_in_header = data_tbl.Properties.VariableNames;
 
-for k = 1:size(list_tract, 1)
+% Get grouping variable. NOTE: need to add lit, vm, and fm.
+if strcmp(beh_measure, 'age')
+    
+    group = data_tbl.group_age;
+    
+end
+
+% Get index matrices for hypothesis-driven grouping of WM tracts.
+for k = 1:length(data_all_in_header)
     
     % Indices of horizontal tracts.
-    h_idx(k) = strcmp(list_tract{k}, 'leftSLF1And2') || strcmp(list_tract{k}, 'rightSLF1And2') ...
-        || strcmp(list_tract{k}, 'leftIFOF') || strcmp(list_tract{k}, 'rightIFOF') ...
-        || strcmp(list_tract{k}, 'leftILF') || strcmp(list_tract{k}, 'rightILF') ...
-        || strcmp(list_tract{k}, 'leftArc') || strcmp(list_tract{k}, 'rightArc') ...
-        || strcmp(list_tract{k}, 'leftSLF3') || strcmp(list_tract{k}, 'rightSLF3');
+    h_idx(k) = strcmp(data_all_in_header{k}, 'leftSLF1And2') || strcmp(data_all_in_header{k}, 'rightSLF1And2') ...
+        || strcmp(data_all_in_header{k}, 'leftIFOF') || strcmp(data_all_in_header{k}, 'rightIFOF') ...
+        || strcmp(data_all_in_header{k}, 'leftILF') || strcmp(data_all_in_header{k}, 'rightILF') ...
+        || strcmp(data_all_in_header{k}, 'leftArc') || strcmp(data_all_in_header{k}, 'rightArc') ...
+        || strcmp(data_all_in_header{k}, 'leftSLF3') || strcmp(data_all_in_header{k}, 'rightSLF3');
     
     % Indices of vertical tracts.
-    v_idx(k) = strcmp(list_tract{k}, 'leftAslant') || strcmp(list_tract{k}, 'rightAslant') ...
-        || strcmp(list_tract{k}, 'leftTPC') || strcmp(list_tract{k}, 'rightTPC') ...
-        || strcmp(list_tract{k}, 'leftpArc') || strcmp(list_tract{k}, 'rightpArc') ...
-        || strcmp(list_tract{k}, 'leftMDLFspl') || strcmp(list_tract{k}, 'rightMDLFspl') ...
-        || strcmp(list_tract{k}, 'leftVOF') || strcmp(list_tract{k}, 'rightVOF') ...
-        || strcmp(list_tract{k}, 'leftMDLFang') || strcmp(list_tract{k}, 'rightMDLFang');
+    v_idx(k) = strcmp(data_all_in_header{k}, 'leftAslant') || strcmp(data_all_in_header{k}, 'rightAslant') ...
+        || strcmp(data_all_in_header{k}, 'leftTPC') || strcmp(data_all_in_header{k}, 'rightTPC') ...
+        || strcmp(data_all_in_header{k}, 'leftpArc') || strcmp(data_all_in_header{k}, 'rightpArc') ...
+        || strcmp(data_all_in_header{k}, 'leftMDLFspl') || strcmp(data_all_in_header{k}, 'rightMDLFspl') ...
+        || strcmp(data_all_in_header{k}, 'leftVOF') || strcmp(data_all_in_header{k}, 'rightVOF') ...
+        || strcmp(data_all_in_header{k}, 'leftMDLFang') || strcmp(data_all_in_header{k}, 'rightMDLFang');
     
     % Set the grouping variable for horizontal (=1) and vertical (=2) tracts and tracts that are not of interest (=0).
     if h_idx(k) == 1
@@ -61,14 +71,17 @@ for k = 1:size(list_tract, 1)
     
 end
 
-% Select the measurements of the tracts that I care about and categorize them into h or v. Convert all zeros to NaN.
-ht = wm_childrenOnly(:, h_idx); ht(ht==0) = NaN;
-vt = wm_childrenOnly(:, v_idx); vt(vt==0) = NaN;
+% Select the measurements of the tracts that I care (h and v) and 
+% the subjects that I care about (non-adults). 
+% Categorize into h or v. Convert all zeros to NaN.
+ht = data_all_in(group ~= 3, h_idx); ht(ht==0) = NaN;
+vt = data_all_in(group ~= 3, v_idx); vt(vt==0) = NaN;
 
+% Do the same for the adults just to show it on the plot; only makes sense for age.
 if strcmp(beh_measure, 'age')
     
-    ht_adult = wm(find(group == 3), h_idx); ht_adult(ht_adult==0) = NaN;
-    vt_adult = wm(find(group == 3), v_idx); vt_adult(vt_adult==0) = NaN;
+    ht_adult = data_all_in(group == 3, h_idx); ht_adult(ht_adult==0) = NaN;
+    vt_adult = data_all_in(group == 3, v_idx); vt_adult(vt_adult==0) = NaN;
     
 end
 
@@ -81,11 +94,11 @@ z_ht = (nanmean(ht, 1) - ht)./nanstd(ht, [], 1);
 z_vt = (nanmean(vt, 1) - vt)./nanstd(vt, [], 1);
 
 % Subset list_tracts so that we can call the correct tract names later.
-list_tract_ht = list_tract(h_idx, :);
-list_tract_vt = list_tract(v_idx, :);
+list_tract_ht = data_all_in_header(h_idx);
+list_tract_vt = data_all_in_header(v_idx);
 
 % Get z-scored age.
-z_cov_age_childrenOnly = (nanmean(cov_age_childrenOnly, 1) - cov_age_childrenOnly)./nanstd(cov_age_childrenOnly, [], 1);
+z_cov_age_childrenOnly = (nanmean(data_tbl.cov_age(group~=3), 1) - data_tbl.cov_age(group~=3))./nanstd(data_tbl.cov_age(group~=3), [], 1);
 
 c = colorcube;
 %% HORIZONTAL TRACTS
@@ -100,10 +113,10 @@ for t = 1:length(list_tract_ht)
     if strcmp(beh_measure, 'age')
         
         % Plot only data points that would have been included in the correlation.
-        scatter(cov_age_childrenOnly, ht(:, t), 'filled', 'MarkerFaceColor', c(count, :))
-        scatter(repmat(max(cov_age_childrenOnly + 4), size(ht_adult(:, t))), ht_adult(:, t), 'MarkerEdgeColor', c(count, :))
+        scatter(data_tbl.cov_age(group~=3), ht(:, t), 'filled', 'MarkerFaceColor', c(count, :))
+        scatter(repmat(max(data_tbl.cov_age(group~=3) + 4), size(ht_adult(:, t))), ht_adult(:, t), 'MarkerEdgeColor', c(count, :))
         if t == 1; hold on; end
-        [r, p, ~, slope] = plotcorr2(cov_age_childrenOnly, ht(:, t), [beh_measure ' (mo)'], ['Average ' wm_measure], [], list_tract_ht{t}, c(count, :), 5);
+        [r, p, ~, slope] = plotcorr2(data_tbl.cov_age(group~=3), ht(:, t), [beh_measure ' (mo)'], ['Average ' wm_measure], [], list_tract_ht{t}, c(count, :), 5);
         ylim([y_min y_max]);
         
     elseif strcmp(control_age, 'yes')
@@ -160,10 +173,10 @@ for t = 1:length(list_tract_vt)
     if strcmp(beh_measure, 'age')
         
         % Plot only data points that would have been included in the corelation.
-        scatter(cov_age_childrenOnly, vt(:, t), 'filled', 'MarkerFaceColor', c(count, :))
-        scatter(repmat(max(cov_age_childrenOnly + 4), size(vt_adult(:, t))), vt_adult(:, t), 'MarkerEdgeColor', c(count, :))
+        scatter(data_tbl.cov_age(group~=3), vt(:, t), 'filled', 'MarkerFaceColor', c(count, :))
+        scatter(repmat(max(data_tbl.cov_age(group~=3) + 4), size(vt_adult(:, t))), vt_adult(:, t), 'MarkerEdgeColor', c(count, :))
         if t == 1; hold on; end
-        [r, p, ~, slope] = plotcorr2(cov_age_childrenOnly, vt(:, t), [beh_measure ' (mo)'], ['Average ' wm_measure], [], list_tract_vt{t}, c(count, :), 5);
+        [r, p, ~, slope] = plotcorr2(data_tbl.cov_age(group~=3), vt(:, t), [beh_measure ' (mo)'], ['Average ' wm_measure], [], list_tract_vt{t}, c(count, :), 5);
         ylim([y_min y_max]);
         
     elseif strcmp(control_age, 'yes')
@@ -217,13 +230,13 @@ for t = 1:length(list_tract_ht)
     count = count + 4;
     
     figure(t+2); hold on;
-   
+    
     if strcmp(beh_measure, 'age')
         
         % Plot only data points that would have been included in the corelation.
-        scatter(cov_age_childrenOnly, ht(:, t), 'filled', 'MarkerFaceColor', c(count, :))
-        scatter(repmat(max(cov_age_childrenOnly + 4), size(ht_adult(:, t))), ht_adult(:, t), 'MarkerEdgeColor', c(count, :))
-        [r, p, statstr] = plotcorr2(cov_age_childrenOnly, ht(:, t), [beh_measure ' (mo)'], ['Average ' wm_measure], [], list_tract_ht{t}, c(count, :), 5);
+        scatter(data_tbl.cov_age(group~=3), ht(:, t), 'filled', 'MarkerFaceColor', c(count, :))
+        scatter(repmat(max(data_tbl.cov_age(group~=3) + 4), size(ht_adult(:, t))), ht_adult(:, t), 'MarkerEdgeColor', c(count, :))
+        [r, p, statstr] = plotcorr2(data_tbl.cov_age(group~=3), ht(:, t), [beh_measure ' (mo)'], ['Average ' wm_measure], [], list_tract_ht{t}, c(count, :), 5);
         ylim([y_min y_max]);
         
     elseif strcmp(control_age, 'yes')
@@ -259,9 +272,9 @@ for t = 1:length(list_tract_vt)
     if strcmp(beh_measure, 'age')
         
         % Plot only data points that would have been included in the corelation.
-        scatter(cov_age_childrenOnly, vt(:, t), 'filled', 'MarkerFaceColor', c(count, :))
-        scatter(repmat(max(cov_age_childrenOnly + 4), size(vt_adult(:, t))), vt_adult(:, t), 'MarkerEdgeColor', c(count, :))
-        [r, p, statstr] = plotcorr2(cov_age_childrenOnly, vt(:, t), [beh_measure ' (mo)'], ['Average ' wm_measure], [], list_tract_vt{t}, c(count, :), 5);
+        scatter(data_tbl.cov_age(group~=3), vt(:, t), 'filled', 'MarkerFaceColor', c(count, :))
+        scatter(repmat(max(data_tbl.cov_age(group~=3) + 4), size(vt_adult(:, t))), vt_adult(:, t), 'MarkerEdgeColor', c(count, :))
+        [r, p, statstr] = plotcorr2(data_tbl.cov_age(group~=3), vt(:, t), [beh_measure ' (mo)'], ['Average ' wm_measure], [], list_tract_vt{t}, c(count, :), 5);
         ylim([y_min y_max]);
         
     elseif strcmp(control_age, 'yes')
@@ -293,25 +306,25 @@ if strcmp(beh_measure, 'age')
     
     % Horizontal
     figure(x)
-    scatter(repmat(cov_age_childrenOnly, [size(ht, 2) 1]), ht(:), 'filled', 'MarkerFaceColor', c(count, :))
+    scatter(repmat(data_tbl.cov_age(group~=3), [size(ht, 2) 1]), ht(:), 'filled', 'MarkerFaceColor', c(count, :))
     hold on;
-    scatter(repmat(max(cov_age_childrenOnly + 4), size(ht_adult(:))), ht_adult(:), 'MarkerEdgeColor', c(count, :))
-    [r, p, ~, slope] = plotcorr2(repmat(cov_age_childrenOnly, [size(ht, 2) 1]), ht(:), [beh_measure ' (mo)'], ['Average ' wm_measure], [], 'Horizontal', c(count, :), 5);
+    scatter(repmat(max(data_tbl.cov_age(group~=3) + 4), size(ht_adult(:))), ht_adult(:), 'MarkerEdgeColor', c(count, :))
+    [r, p, ~, slope] = plotcorr2(repmat(data_tbl.cov_age(group~=3), [size(ht, 2) 1]), ht(:), [beh_measure ' (mo)'], ['Average ' wm_measure], [], 'Horizontal', c(count, :), 5);
     title(['Horizontal Tracts, slope = ' num2str(slope) ', r = ' num2str(r) ', p = ' num2str(p)]);
     hold off;
     
     % Vertical
     figure(x+1)
-    scatter(repmat(cov_age_childrenOnly, [size(vt, 2) 1]), vt(:), 'filled', 'MarkerFaceColor', c(count+30, :))
+    scatter(repmat(data_tbl.cov_age(group~=3), [size(vt, 2) 1]), vt(:), 'filled', 'MarkerFaceColor', c(count+30, :))
     hold on;
-    scatter(repmat(max(cov_age_childrenOnly + 4), size(vt_adult(:))), vt_adult(:), 'MarkerEdgeColor', c(count+30, :))
-    [r, p, ~, slope] = plotcorr2(repmat(cov_age_childrenOnly, [size(vt, 2) 1]), vt(:), [beh_measure ' (mo)'], ['Average ' wm_measure], [], 'Vertical', c(count+30, :), 5);
+    scatter(repmat(max(data_tbl.cov_age(group~=3) + 4), size(vt_adult(:))), vt_adult(:), 'MarkerEdgeColor', c(count+30, :))
+    [r, p, ~, slope] = plotcorr2(repmat(data_tbl.cov_age(group~=3), [size(vt, 2) 1]), vt(:), [beh_measure ' (mo)'], ['Average ' wm_measure], [], 'Vertical', c(count+30, :), 5);
     ylim([y_min y_max]);
     title(['Vertical Tracts, slope = ' num2str(slope) ', r = ' num2str(r) ', p = ' num2str(p)]);
     hold off;
     
 elseif strcmp(control_age, 'yes')
-
+    
     % Horizontal
     figure(x)
     scatter(repmat(measure_childrenOnly_z, [size(z_ht, 2) 1]), z_ht(:), 'filled', 'MarkerFaceColor', c(count, :))

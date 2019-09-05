@@ -20,12 +20,13 @@ wm_measure_here = {'fa', 'ad', 'md', 'rd', 'od', 'icvf', 'isovf'}; %fa, ad, md, 
 for w = 1:length(wm_measure_here)
     
     % Read in data (from LWX_devOfVerticalWM_v3_loadData.m).
-    load([rootDir 'supportFiles/LWX_data_' wm_measure_here{w} '_' beh_measure '_raw.mat'])
+    load(fullfile(rootDir, 'supportFiles', ['LWX_data_' wm_measure_here{w} '_' beh_measure '_raw.mat']))
     
     % Convert into array and header for ease.
     data_all_in = table2array(data_tbl);
     data_all_in_header = data_tbl.Properties.VariableNames;
     
+    % Get grouping variable. NOTE: need to add lit, vm, and fm.
     if strcmp(beh_measure, 'age')
         
         group = data_tbl.group_age;
@@ -123,11 +124,11 @@ for w = 1:length(wm_measure_here)
     % Output csv file for ANOVA in SPSS. (Matlab doesn't handle Mixed Model
     % ANOVAs well when the between-group variable is correlated with subID
     % (e.g., when between-group variable is something like age groups).
-    t_out = array2table(cat(2, data_tbl.subID, group, toi(:, 1:end), nanmean(toi(:, hv == 1), 2), nanmean(toi(:, hv == 2), 2)), 'VariableNames', ...
-        {'subID', 'group_age', data_all_in_header{:}, 'meanH', 'meanV'});
+    t_out = array2table(cat(2, data_tbl.subID, group, data_tbl.cov_sex, toi(:, 1:end), nanmean(toi(:, hv == 1), 2), nanmean(toi(:, hv == 2), 2)), 'VariableNames', ...
+        {'subID', 'group_age', 'cov_sex', data_all_in_header{:}, 'meanH', 'meanV'});
     
     % Write.
-    writetable(t_out, [rootDir 'LWX_devOfVerticalWM_forSPSS_' wm_measure_here{w} '.csv']);
+    writetable(t_out, fullfile(rootDir, 'supportFiles', ['LWX_devOfVerticalWM_forSPSS_' wm_measure_here{w} '.csv']));
     
     % Output z-scored file for SPSS.
     toi_z = (nanmean(toi, 1) - toi)./nanstd(toi, [], 1);
@@ -137,9 +138,9 @@ for w = 1:length(wm_measure_here)
     temp = nanmean(toi(:, hv == 2), 2);
     toi_meanv_z = (nanmean(temp, 1) - temp)./nanstd(temp, [], 1); clear temp
     
-    t_out_z = array2table(cat(2, data_tbl.subID, group, toi_z(:, 1:end), toi_meanh_z, toi_meanv_z), 'VariableNames', ...
-        {'subID', 'group_age', data_all_in_header{:}, 'meanH', 'meanV'});
-    writetable(t_out_z, [rootDir 'LWX_devOfVerticalWM_forSPSS_' wm_measure_here{w} '_z.csv']);
+    t_out_z = array2table(cat(2, data_tbl.subID, group, data_tbl.cov_sex, toi_z(:, 1:end), toi_meanh_z, toi_meanv_z), 'VariableNames', ...
+        {'subID', 'group_age', 'cov_sex', data_all_in_header{:}, 'meanH', 'meanV'});
+    writetable(t_out_z, fullfile(rootDir, 'supportFiles', ['LWX_devOfVerticalWM_forSPSS_' wm_measure_here{w} '_z.csv']));
     
 end
 
