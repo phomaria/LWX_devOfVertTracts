@@ -224,7 +224,7 @@ for w = 1:length(w_measures)
             set(hp1, 'facecolor', yc_color(1:3), 'edgecolor', 'none', 'facealpha', .2);
             
             plot(mean(oc, 2), 'LineWidth', 3, 'LineStyle', '-', 'Color', oc_color(1:3))
-            hi = mean(oc, 2) + std(yc, 0, 2); lo = mean(oc, 2) - std(oc, 0, 2); x = (1:size(mean(oc, 2),1))';
+            hi = mean(oc, 2) + std(oc, 0, 2); lo = mean(oc, 2) - std(oc, 0, 2); x = (1:size(mean(oc, 2),1))';
             hp2 = patch([x; x(end:-1:1); x(1)], [lo; hi(end:-1:1); lo(1)], oc_color(1:3));
             set(hp2, 'facecolor', oc_color(1:3), 'edgecolor', 'none', 'facealpha', .2);
             

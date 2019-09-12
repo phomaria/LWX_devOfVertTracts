@@ -14,7 +14,7 @@ format shortG
 rootDir = '/N/dc2/projects/lifebid/development/LWX_developmentOfVerticalWM/';
 % addpath(genpath([rootDir 'proj-5a74d1e26ed91402ce400cca/']));
 
-y_min = -1.5; y_max = 1.5;
+y_min = -1; y_max = 1;
 
 wm_measure = 'fa'; %fa, ad, rd, md, od, icvf, isovf
 beh_measure = {'age', 'lit', 'vm', 'fm'}; %NOTE: this only uses age right now.
@@ -212,7 +212,7 @@ elseif strcmp(wm_measure, 'od')
 elseif strcmp(wm_measure, 'icvf')
     fig_title = 'Neurite Density (ICVF)';
 elseif strcmp(wm_measure, 'isovf')
-    fig_title = 'Isometric Volume Fraction (ISOVF)';
+    fig_title = 'Isotropic Volume Fraction (ISOVF)';
 elseif strcmp(wm_measure, 'ad')
     fig_title = 'Axial Diffusivity (AD)';
 elseif strcmp(wm_measure, 'md')
@@ -222,19 +222,10 @@ elseif strcmp(wm_measure, 'rd')
 end
 title([fig_title ', r2 = ' num2str(mdl.Rsquared.Ordinary)]);
 
-print([rootDir 'plots/plot_mdlEstimates_' wm_measure '_hv'], '-dpng')
-print([rootDir 'plots/eps/plot_mdlEstimates_' wm_measure '_hv'], '-depsc')
+print(fullfile(rootDir, 'plots', ['plot_mdlEstimates_' wm_measure '_hv']), '-dpng')
+print(fullfile(rootDir, 'plots', 'eps', ['plot_mdlEstimates_' wm_measure '_hv']), '-depsc')
 
 hold off;
-
-%     % Output csv file for ANOVA in SPSS. (Matlab doesn't handle Mixed Model
-%     % ANOVAs well when the between-group variable is correlated with subID
-% %     % (e.g., when between-group variable is something like age groups).
-%     t_out = array2table(cat(2, sub_childrenOnly, beh(:, 1), z_beh(:, 2:end), z_categorymean_h, z_categorymean_v), 'VariableNames', ...
-%         {'subID', 'Age_mo', 'zLiteracy', 'zVisualMotor', 'zFineMotor', 'zmeanH', 'zmeanV'});
-% %
-% %     % Write.
-%     writetable(t_out, [rootDir 'LWX_devOfVerticalWM_forSPSS_' wm_measure '_hv.csv']);
 
 %% Perform Multiple Linear Regression: AGE ~ WMh + WMv + 1|Subject.
 

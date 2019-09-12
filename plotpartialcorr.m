@@ -7,7 +7,7 @@ function [r, p, statstr, slope] = plotpartialcorr(x, y, z, xname, yname, titlest
     
 [r, p] = partialcorr(x, y, z, 'Rows','pairwise');
 
-idxy = (isnan(x)+isnan(y)+isnan(z)) > 0;
+idxy = any((isnan(x)+isnan(y)+isnan(z)), 2) > 0;
 
 linearCoef = polyfit(x(~idxy),y(~idxy),1);
 linearFit = polyval(linearCoef,x(~idxy));

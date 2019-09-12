@@ -215,7 +215,7 @@ elseif strcmp(wm_measure, 'od')
 elseif strcmp(wm_measure, 'icvf')
     fig_title = 'Neurite Density (ICVF)';
 elseif strcmp(wm_measure, 'isovf')
-    fig_title = 'Isometric Volume Fraction (ISOVF)';
+    fig_title = 'Isotropic Volume Fraction (ISOVF)';
 elseif strcmp(wm_measure, 'ad')
     fig_title = 'Axial Diffusivity (AD)';
 elseif strcmp(wm_measure, 'md')

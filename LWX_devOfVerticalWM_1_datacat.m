@@ -81,31 +81,31 @@ for w = 1:length(w_measures)
             % Read in mean WM measure.
             if strcmp(wm_measure, 'ad')
                 
-                m(i, j) = mean(data_temp.ad_1(start:stop));
+                m(i, j) = nanmean(data_temp.ad_1(start:stop));
                 
             elseif strcmp(wm_measure, 'fa')
                 
-                m(i, j) = mean(data_temp.fa_1(start:stop));
+                m(i, j) = nanmean(data_temp.fa_1(start:stop));
                 
             elseif strcmp(wm_measure, 'md')
                 
-                m(i, j) = mean(data_temp.md_1(start:stop));
+                m(i, j) = nanmean(data_temp.md_1(start:stop));
                 
             elseif strcmp(wm_measure, 'rd')
                 
-                m(i, j) = mean(data_temp.rd_1(start:stop));
+                m(i, j) = nanmean(data_temp.rd_1(start:stop));
                 
             elseif strcmp(wm_measure, 'icvf')
                 
-                m(i, j) = mean(data_temp.icvf_1(start:stop));
+                m(i, j) = nanmean(data_temp.icvf_1(start:stop));
                 
             elseif strcmp(wm_measure, 'isovf')
                 
-                m(i, j) = mean(data_temp.isovf_1(start:stop));
+                m(i, j) = nanmean(data_temp.isovf_1(start:stop));
                 
             elseif strcmp(wm_measure, 'od')
                 
-                m(i, j) = mean(data_temp.od_1(start:stop));
+                m(i, j) = nanmean(data_temp.od_1(start:stop));
                 
             end
             
@@ -185,7 +185,7 @@ for w = 1:length(w_measures)
     save([rootDir 'supportFiles/LWX_data_' wm_measure '_raw.mat'], 'data_tbl')
     
     % Reset for next loop.
-    clearvars -except w rootDir beh_data_in_tbl beh_data_in_header beh_data_in blprojectid remove_outliers w_measures
+    clearvars -except w rootDir beh_data_in_tbl beh_data_in_header beh_data_in blprojectid remove_outliers w_measures outlier
     
 end
 

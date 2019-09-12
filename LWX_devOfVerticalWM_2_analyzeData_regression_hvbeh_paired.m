@@ -14,8 +14,7 @@ format shortG
 rootDir = '/N/dc2/projects/lifebid/development/LWX_developmentOfVerticalWM/';
 % addpath(genpath([rootDir 'proj-5a74d1e26ed91402ce400cca/']));
 
-% diary log_LWXdevofVerticalWM_2_analyzeData_step3_regression_hv_ind_fu3
-wm_measure = 'fa'; %fa, ad, rd, md, od, icvf, isovf
+wm_measure = 'od'; %fa, ad, rd, md, od, icvf, isovf
 beh_measure = {'age_mo', 'c_lit', 'c_vm', 'c_fm'};
 
 %% Tractography
@@ -26,13 +25,6 @@ load(fullfile(rootDir, 'supportFiles', ['LWX_data_' wm_measure '_raw.mat']))
 % Convert into array and header for ease.
 data_all_in = table2array(data_tbl);
 data_all_in_header = data_tbl.Properties.VariableNames;
-
-% Get grouping variable. NOTE: need to add lit, vm, and fm.
-% if strcmp(beh_measure{1}, 'age_mo')
-    
-    group = data_tbl.gp_age;
-    
-% end
 
 % Get index matrices for hypothesis-driven grouping of WM tracts.
 for k = 1:length(data_all_in_header)
@@ -57,8 +49,8 @@ end
 % SELECT the measurements of the tracts that I care (h and v) and
 % the subjects that I care about (non-adults).
 % Categorize into h or v. Convert all zeros to NaN.
-ht = data_all_in(group ~= 3, h_idx); ht(ht==0) = NaN;
-vt = data_all_in(group ~= 3, v_idx); vt(vt==0) = NaN;
+ht = data_all_in(data_tbl.gp_age ~= 3, h_idx); ht(ht==0) = NaN;
+vt = data_all_in(data_tbl.gp_age ~= 3, v_idx); vt(vt==0) = NaN;
 
 % tract group mean z-score: performed within-category, across-subjects to control for subject-level
 % differences in 'reactivity' while keeping subject-level differences in the WM measurement of interest
@@ -72,8 +64,8 @@ list_tract_vt = data_all_in_header(v_idx);
 %% Behavior.
 
 % Subselect only data for children and for the covariates of interest.
-beh = cat(2, data_tbl.cov_age(group~=3), data_tbl.c_lit(group~=3), data_tbl.c_vm(group~=3), data_tbl.c_fm(group~=3), ...
-    data_tbl.cov_sex(group~=3));
+beh = cat(2, data_tbl.cov_age(data_tbl.gp_age~=3), data_tbl.c_lit(data_tbl.gp_age~=3), data_tbl.c_vm(data_tbl.gp_age~=3), data_tbl.c_fm(data_tbl.gp_age~=3), ...
+    data_tbl.cov_sex(data_tbl.gp_age~=3));
 
 % Get measure-specific z-scores, based on within measure means/std.
 z_beh = (beh - nanmean(beh, 1))./nanstd(beh, 1);
@@ -101,9 +93,7 @@ for b = 1:length(beh_measure)
             
             % Display tract name.
             disp(['----------- ' beh_measure{b} ': ' list_tract_ht{h} ' and ' list_tract_vt{v} ' -----------']);
-            
-            % Handle Missing Not At Random (MNAR) data -- right now replacing with mean (not best option).
-            
+                        
             %% Determine if Random Effect is needed for 'subject' and Perform GLM.
             
             % TRACTS: Design matrix, (i.e., [WMa, WMm, WMv]), fixed effects
@@ -113,16 +103,11 @@ for b = 1:length(beh_measure)
             Z = ones(size(X, 1), 1);
             
             % GROUPING Variable:
-            G = repmat(data_tbl.subID(group ~= 3), [2 1]);
+            G = repmat(data_tbl.subID(data_tbl.gp_age ~= 3), [2 1]);
             
             % TRAINING CONDITION: Define the outcome data, (i.e., behavior).
             y = z_mat;
-            
-%             % Perform fitting procedure with fitlm, random effect of subject: 'Recog ~ WMa + WMm + Wmz';
-%             tbl = array2table(cat(2, X, y, G), 'VariableNames', [list_tract_ht(h); list_tract_vt(v); beh_measures(b); 'subject']);
-%             
-%             mdl = fitlme(tbl, [beh_measures{b} '~' list_tract_ht{h} '+' list_tract_vt{v} '+(1|subject)']);
-%             
+                  
             % Perform fitting procedure with fitlm: 'Recog ~ WMa + WMm + Wmz + 1|subj';
             mdl = fitlmematrix(X, y, Z, G, 'Covariancepattern', 'Diagonal', 'FixedEffectPredictors', [list_tract_ht(h); list_tract_vt(v); ...
                 strcat(list_tract_ht(h), '_sex'); strcat(list_tract_vt(v), '_sex')], 'RandomEffectGroups', {'Subject'});
@@ -143,13 +128,13 @@ for b = 1:length(beh_measure)
             
             % If the beta for the vertical tract is significantly *greater* than the beta for the horizontal tract, 
             coef_check = dataset2cell(mdl.Coefficients);
-            if pVal <= .05 && coef_check{strcmp(coef_check(:, 1), list_tract_vt{v}), 2} >= coef_check{strcmp(coef_check(:, 1), list_tract_ht{h}), 2}
+            if pVal <= .05 && coef_check{find(strcmp(coef_check(:, 1), list_tract_vt{v})), 2} >= coef_check{find(strcmp(coef_check(:, 1), list_tract_ht{h})), 2}
                 
                 % Code that location for the vertical tract.
                 keep(v, h) = 1;
                 
             %If the beta for the vertical tract is significantly *less* than the beta for the horizontal tract, 
-            elseif pVal <= .05 && coef_check{strcmp(coef_check(:, 1), list_tract_vt{v}), 2} < coef_check{strcmp(coef_check(:, 1), list_tract_ht{h}), 2}
+            elseif pVal <= .05 && coef_check{find(strcmp(coef_check(:, 1), list_tract_vt{v})), 2} < coef_check{find(strcmp(coef_check(:, 1), list_tract_ht{h})), 2}
                 
                 % Code that location for the horizontal tract.
                 keep(v, h) = -1;
@@ -179,6 +164,11 @@ for b = 1:length(beh_measure)
         end
         
     end
+    
+%     % Flip if using a measure where lower is considered better.
+%     if strcmp(wm_measure, 'od')
+%         keep = -keep;
+%     end
     
     fcount = fcount + 1;
     
@@ -265,12 +255,9 @@ for b = 1:length(beh_measure)
         
     end
     
-    print([rootDir 'plots/plot_spy_' beh_measure{b} '_' wm_measure '_hv'], '-dpng')
-    print([rootDir 'plots/eps/plot_spy_' beh_measure{b} '_' wm_measure '_hv'], '-depsc')
+    print(fullfile(rootDir, 'plots', ['plot_spy_' beh_measure{b} '_' wm_measure '_hv']), '-dpng')
+    print(fullfile(rootDir, 'plots', 'eps', ['plot_spy_' beh_measure{b} '_' wm_measure '_hv']), '-depsc')
     
     hold off;
     
 end
-
-
-% diary off

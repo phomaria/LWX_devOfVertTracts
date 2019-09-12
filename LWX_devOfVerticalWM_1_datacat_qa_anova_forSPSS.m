@@ -101,15 +101,15 @@ for w = 1:length(wm_measure_here)
     % Replace outliers with NaN.
     % Max
     if ~isempty(find(toi > r_max))
-        toi(find(toi > r_max)) = NaN;
-        disp(['Replaced ' num2str(numel(find(toi > r_max))) ' data points that were above 3 standard deviations of the within-tract, within-group mean with NaN.'])
+                disp(['Replaced ' num2str(numel(find(toi > r_max))) ' data points that were above 3 standard deviations of the within-tract, within-group mean with NaN.'])
+                toi(find(toi > r_max)) = NaN;
     else
         disp('No data points were above 3 standard deviations of the within-tract, within-group mean.')
     end
     %Min
     if ~isempty(find(toi < r_min))
-        toi(find(toi > r_min)) = NaN;
-        disp(['Replaced ' num2str(numel(find(toi > r_min))) ' data points that were below 3 standard deviations of the within-tract, within-group mean with NaN.'])
+                disp(['Replaced ' num2str(numel(find(toi < r_min))) ' data points that were below 3 standard deviations of the within-tract, within-group mean with NaN.'])
+                toi(find(toi < r_min)) = NaN;
     else
         disp('No data points were below 3 standard deviations of the within-tract, within-group mean.')
     end
