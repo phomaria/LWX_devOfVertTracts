@@ -1,4 +1,4 @@
-function plotcorr(x,y,xname,yname,titlestrm)
+function [r] = plotcorr(x,y,xname,yname,titlestrm, c)
 
 % function plotcorr(x,y,xname,yname,titlestr)
 %
@@ -13,14 +13,23 @@ linearCoef = polyfit(x(~idxy),y(~idxy),1);
 linearFit = polyval(linearCoef,x(~idxy));
 % plot(x(~idxy),y(~idxy), 'bo'); 
 hold on
-plot(x(~idxy),linearFit,'r--')
+if strcmp(c, 'b')
+    plot(x(~idxy),linearFit,'b--')
+elseif strcmp(c, 'r')
+    plot(x(~idxy),linearFit,'r--')
+else
+    plot(x(~idxy),linearFit,'r--')
+end
 
 statstr = sprintf('r = %.3f, p = %.3f',r(2, 1),p(2, 1));
+
 if exist('xname','var')
     xlabel({xname; statstr})
 else
     xlabel(statstr)
 end
+
+r = r(2, 1);
 
 if exist('titlestr','var'), title(titlestr), end
 if exist('yname','var'), ylabel(yname), end

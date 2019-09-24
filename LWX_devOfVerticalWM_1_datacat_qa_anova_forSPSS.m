@@ -20,7 +20,7 @@ wm_measure_here = {'fa', 'ad', 'md', 'rd', 'od', 'icvf', 'isovf'};
 for w = 1:length(wm_measure_here)
     
     % Read in data (from LWX_devOfVerticalWM_v3_loadData.m).
-    load(fullfile(rootDir, 'supportFiles', ['LWX_data_' wm_measure_here{w} '_raw.mat']))
+    load(fullfile(rootDir, 'supportFiles', ['LWX_data_' wm_measure_here{w} '_raw_singleshell.mat']))
     
     % Convert into array and header for ease.
     data_all_in = table2array(data_tbl);
@@ -122,7 +122,7 @@ for w = 1:length(wm_measure_here)
         {'subID', 'group_age', 'group_lit', 'group_vm', 'group_fm', 'cov_age', 'cov_sex', data_all_in_header{:}, 'meanH', 'meanV'});
     
     % Write.
-    writetable(t_out, fullfile(rootDir, 'supportFiles', ['LWX_devOfVerticalWM_forSPSS_' wm_measure_here{w} '.csv']));
+    writetable(t_out, fullfile(rootDir, 'supportFiles', ['LWX_devOfVerticalWM_forSPSS_' wm_measure_here{w} '_singleshell.csv']));
     
     % Output z-scored file for SPSS.
     toi_z = (nanmean(toi, 1) - toi)./nanstd(toi, [], 1);
@@ -135,7 +135,7 @@ for w = 1:length(wm_measure_here)
     t_out_z = array2table(cat(2, data_tbl.subID, data_tbl.gp_age, data_tbl.gp_lit, data_tbl.gp_vm, ...
         data_tbl.gp_fm, data_tbl.cov_age, data_tbl.cov_sex,toi_z(:, 1:end), toi_meanh_z, toi_meanv_z), 'VariableNames', ...
         {'subID', 'group_age', 'group_lit', 'group_vm', 'group_fm', 'cov_age', 'cov_sex', data_all_in_header{:}, 'meanH', 'meanV'});
-    writetable(t_out_z, fullfile(rootDir, 'supportFiles', ['LWX_devOfVerticalWM_forSPSS_' wm_measure_here{w} '_z.csv']));
+    writetable(t_out_z, fullfile(rootDir, 'supportFiles', ['LWX_devOfVerticalWM_forSPSS_' wm_measure_here{w} '_singleshell_z.csv']));
     
 end
 

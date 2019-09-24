@@ -182,7 +182,7 @@ for w = 1:length(w_measures)
     data_tbl = array2table(data_all, 'VariableNames', data_all_header);
     
     % Save all variables.
-    save([rootDir 'supportFiles/LWX_data_' wm_measure '_raw.mat'], 'data_tbl')
+    save([rootDir 'supportFiles/LWX_data_' wm_measure '_raw_singleshell.mat'], 'data_tbl')
     
     % Reset for next loop.
     clearvars -except w rootDir beh_data_in_tbl beh_data_in_header beh_data_in blprojectid remove_outliers w_measures outlier
