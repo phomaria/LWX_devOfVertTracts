@@ -20,11 +20,21 @@ beh_measure = {'age_mo', 'c_lit', 'c_vm', 'c_fm'};
 %% Tractography
 
 % Read in data.
-load(fullfile(rootDir, 'supportFiles', ['LWX_data_' wm_measure '_raw.mat']))
+load(fullfile(rootDir, 'supportFiles', ['LWX_data_' wm_measure '_raw_singleshell.mat']))
 
 % Convert into array and header for ease.
 data_all_in = table2array(data_tbl);
 data_all_in_header = data_tbl.Properties.VariableNames;
+
+% Find subjects who have NaN entries for any behavior or wm tract.
+idx_nan = ~any(isnan(data_all_in), 2);
+
+% Remove subjects from z_beh and from z_categorymeanh and z_categorymeanv who have NaN entries for any behavior.
+data_tbl = data_tbl(idx_nan, :);
+data_all_in = data_all_in(idx_nan, :);
+
+% Get grouping variable easy selection by age.
+group = data_tbl.gp_age;
 
 % Get index matrices for hypothesis-driven grouping of WM tracts.
 for k = 1:length(data_all_in_header)
@@ -255,8 +265,8 @@ for b = 1:length(beh_measure)
         
     end
     
-    print(fullfile(rootDir, 'plots', ['plot_spy_' beh_measure{b} '_' wm_measure '_hv']), '-dpng')
-    print(fullfile(rootDir, 'plots', 'eps', ['plot_spy_' beh_measure{b} '_' wm_measure '_hv']), '-depsc')
+    print(fullfile(rootDir, 'plots', ['plot_spy_' beh_measure{b} '_' wm_measure '_hv_singleshell']), '-dpng')
+    print(fullfile(rootDir, 'plots', 'eps', ['plot_spy_' beh_measure{b} '_' wm_measure '_hv_singleshell']), '-depsc')
     
     hold off;
     
