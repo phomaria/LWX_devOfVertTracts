@@ -14,27 +14,34 @@ format shortG
 rootDir = '/N/dc2/projects/lifebid/development/LWX_developmentOfVerticalWM/';
 % addpath(genpath([rootDir 'proj-5a74d1e26ed91402ce400cca/']));
 
+excludegroup = 4;
+
 y_min = -1; y_max = 1;
 
-wm_measure = 'fa'; %fa, ad, rd, md, od, icvf, isovf
+wm_measure = {'fa', 'md', 'ad', 'rd'}; %fa, ad, rd, md, od, icvf, isovf
 beh_measure = {'age', 'lit', 'vm', 'fm'}; %NOTE: this only uses age right now.
 
 %% Tractography
 
+for w = 1:length(wm_measure)
+    
 % Read in data.
-load(fullfile(rootDir, 'supportFiles', ['LWX_data_' wm_measure '_raw.mat']))
+load(fullfile(rootDir, 'supportFiles', ['LWX_data_' wm_measure{w} '_raw_singleshell.mat']))
 
 % Convert into array and header for ease.
 data_all_in = table2array(data_tbl);
 data_all_in_header = data_tbl.Properties.VariableNames;
 
-% Get grouping variable. NOTE: need to add lit, vm, and fm.
-% if strcmp(beh_measure{1}, 'age')
-    
+% Find subjects who have NaN entries for any behavior or wm tract.
+idx_nan = ~any(isnan(data_all_in), 2);
+
+% Remove subjects from z_beh and from z_categorymeanh and z_categorymeanv who have NaN entries for any behavior.
+data_tbl = data_tbl(idx_nan, :);
+data_all_in = data_all_in(idx_nan, :);
+
+% Get grouping variable easy selection by age.
 group = data_tbl.gp_age;
     
-% end
-
 % Get index matrices for hypothesis-driven grouping of WM tracts.
 for k = 1:length(data_all_in_header)
     
@@ -58,8 +65,8 @@ end
 % SELECT the measurements of the tracts that I care (h and v) and
 % the subjects that I care about (non-adults).
 % Categorize into h or v. Convert all zeros to NaN.
-ht = data_all_in(group ~= 3, h_idx); ht(ht==0) = NaN;
-vt = data_all_in(group ~= 3, v_idx); vt(vt==0) = NaN;
+ht = data_all_in(group ~= excludegroup, h_idx); ht(ht==0) = NaN;
+vt = data_all_in(group ~= excludegroup, v_idx); vt(vt==0) = NaN;
 
 % AVERAGE the WM propery of interest for each subject averaged across tracts within horizontal or vertical categories.
 categorymean_h = nanmean(ht, 2);
@@ -76,15 +83,15 @@ z_categorymean = temp(:); clear temp
 %% Behavior.
 
 % Subselect only data for children and for the covariates of interest.
-beh = cat(2, data_tbl.cov_age(group~=3), data_tbl.c_lit(group~=3), data_tbl.c_vm(group~=3), data_tbl.c_fm(group~=3), ...
-    data_tbl.cov_sex(group~=3));
+beh = cat(2, data_tbl.cov_age(group~=excludegroup), data_tbl.c_lit(group~=excludegroup), data_tbl.c_vm(group~=excludegroup), data_tbl.c_fm(group~=excludegroup), ...
+    data_tbl.cov_sex(group~=excludegroup));
 
 % Get measure-specific z-scores (even for age).
-z_beh = (beh - nanmean(beh))./nanstd(beh);
+z_beh = (beh - nanmean(beh, 1))./nanstd(beh, [], 1);
 
 %% Perform Multiple Linear Regression: Beh ~ WMh + WMv + 1|Subject.
 
-% RESPONSE VARIABLE: Define behavior the response variable.
+% RESPONSE VARIABLE: Define behavior, the response variable. (NOTE: no need to z-score the sex covariate.)
 y = cat(1, z_beh(:, 1), z_beh(:, 2), z_beh(:, 3), z_beh(:, 4), beh(:, 5));
 
 % Add noise to respons variable.
@@ -97,7 +104,7 @@ X = blkdiag([z_categorymean_h z_categorymean_v], [z_categorymean_h z_categorymea
 Z = ones(size(y));
 
 % GROUPING VARIABLE: subject.
-G = repmat(data_tbl.subID(group ~= 3), [size(z_beh, 2) 1]);
+G = repmat(data_tbl.subID(group ~= excludegroup), [size(z_beh, 2) 1]);
 
 % Convert to table for LME.
 tbl = array2table(cat(2, y, X, Z, G), 'VariableNames', {'beh', 'age_h', 'age_v', 'lit_h', 'lit_v', 'vm_h', 'vm_v', 'fm_h', 'fm_v', 'sex_h', 'sex_v', 'constant', 'sub'});
@@ -205,25 +212,25 @@ set(gca,'xtick',[]); set(gca,'xticklabel',{[]}); set(gca,'FontSize', fontsize)
 ylabel('Beta Estimates +/- SE');
 box off;
 
-if strcmp(wm_measure, 'fa')
+if strcmp(wm_measure{w}, 'fa')
     fig_title = 'Fractional Anisotropy';
-elseif strcmp(wm_measure, 'od')
+elseif strcmp(wm_measure{w}, 'od')
     fig_title = 'Orientation Dispersion';
-elseif strcmp(wm_measure, 'icvf')
+elseif strcmp(wm_measure{w}, 'icvf')
     fig_title = 'Neurite Density (ICVF)';
-elseif strcmp(wm_measure, 'isovf')
+elseif strcmp(wm_measure{w}, 'isovf')
     fig_title = 'Isotropic Volume Fraction (ISOVF)';
-elseif strcmp(wm_measure, 'ad')
+elseif strcmp(wm_measure{w}, 'ad')
     fig_title = 'Axial Diffusivity (AD)';
-elseif strcmp(wm_measure, 'md')
+elseif strcmp(wm_measure{w}, 'md')
     fig_title = 'Mean Diffusivity (MD)';
-elseif strcmp(wm_measure, 'rd')
+elseif strcmp(wm_measure{w}, 'rd')
     fig_title = 'Radial Diffusivity (RD)';
 end
 title([fig_title ', r2 = ' num2str(mdl.Rsquared.Ordinary)]);
 
-print(fullfile(rootDir, 'plots', ['plot_mdlEstimates_' wm_measure '_hv']), '-dpng')
-print(fullfile(rootDir, 'plots', 'eps', ['plot_mdlEstimates_' wm_measure '_hv']), '-depsc')
+print(fullfile(rootDir, 'plots', ['plot_mdlEstimates_' wm_measure{w} '_hv_singleshell']), '-dpng')
+print(fullfile(rootDir, 'plots', 'eps', ['plot_mdlEstimates_' wm_measure{w} '_hv_singleshell']), '-depsc')
 
 hold off;
 
@@ -242,7 +249,7 @@ X = [z_categorymean_h z_categorymean_v];
 Z = ones(size(y));
 
 % GROUPING VARIABLE: subject.
-G = data_tbl.subID(group ~= 3);
+G = data_tbl.subID(group ~= excludegroup);
 
 % Perform fitting procedure with fitlm: 'Recog ~ WMh + Wmv + 1|subj';
 tbl = array2table(cat(2, X, y, G), 'VariableNames', {'h', 'v', 'age', 'sub'});
@@ -281,7 +288,7 @@ X = [z_categorymean_h z_categorymean_v];
 Z = ones(size(y));
 
 % GROUPING VARIABLE: subject.
-G = data_tbl.subID(group ~= 3);
+G = data_tbl.subID(group ~= excludegroup);
 
 % Perform fitting procedure with fitlm: 'Recog ~ WMh + Wmv + 1|subj';
 tbl = array2table(cat(2, X, y, G), 'VariableNames', {'h', 'v', 'lit', 'sub'});
@@ -320,7 +327,7 @@ X = [z_categorymean_h z_categorymean_v];
 Z = ones(size(y));
 
 % GROUPING VARIABLE: subject.
-G = data_tbl.subID(group ~= 3);
+G = data_tbl.subID(group ~= excludegroup);
 
 % Perform fitting procedure with fitlm: 'Recog ~ WMh + Wmv + 1|subj';
 tbl = array2table(cat(2, X, y, G), 'VariableNames', {'h', 'v', 'vm', 'sub'});
@@ -359,7 +366,7 @@ X = [z_categorymean_h z_categorymean_v];
 Z = ones(size(y));
 
 % GROUPING VARIABLE: subject.
-G = data_tbl.subID(group ~= 3);
+G = data_tbl.subID(group ~= excludegroup);
 
 % Perform fitting procedure with fitlm: 'Recog ~ WMh + Wmv + 1|subj';
 tbl = array2table(cat(2, X, y, G), 'VariableNames', {'h', 'v', 'fm', 'sub'});
@@ -382,4 +389,9 @@ disp(mdl.Coefficients)
 [pVal, F, df1, df2] = coefTest(mdl, [0 -1 1]);
 disp(['Planned comparison All Vertical Tracts > All Horizontal Tracts for Fine-Motor Skill: F(' ...
     num2str(df1) ', ' num2str(df2) ') = ' num2str(F) ', p = ' num2str(pVal) '.'])
+
+
+clear data_tbl data_all_in data_all_in_header
+
+end
 
